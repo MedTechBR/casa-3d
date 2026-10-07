@@ -41,6 +41,8 @@ canvas{display:block}
 #joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.5)}
 @media (pointer:coarse){#joy{display:block}#ajuda{display:none}}
 @media (max-width:640px){#mapa{width:42vw}#topo .local{font-size:15px}#barra button,#barra a{padding:9px 8px;font-size:12px}}
+#referencia{width:min(1100px,95vw);max-height:92vh;background:#f2eee7;color:#302c26;border:0;padding:22px;overflow:auto;touch-action:pan-y}#referencia::backdrop{background:rgba(0,0,0,.8)}#referencia img{width:100%;max-height:72vh;object-fit:contain}#fecharReferencia{float:right;font-size:28px;border:0;background:none;cursor:pointer}#referencia h2{font-size:19px}#referencia p{font-size:13px}#barra{max-width:96vw;overflow-x:auto}@media(max-width:640px){#barra{width:96vw;justify-content:flex-start}#mapa{top:75px}}
+#irAmbiente{background:#302c26;color:#f4f1ea;border:0;border-radius:8px;padding:8px;font:inherit;max-width:130px}
 </style>
 </head>
 <body>
@@ -51,10 +53,12 @@ canvas{display:block}
 <div id="joy"><i></i></div>
 <div id="barra" class="vidro">
   <button id="bMapa" class="on">Planta</button>
+  <button id="bPropostas" class="on" aria-pressed="true">Propostas: ligadas</button><button id="bReferencia">Ver proposta</button><select id="irAmbiente" aria-label="Ir para ambiente"><option value="">Ir para…</option><option value="deck">Deck novo</option><option value="sala">Sala</option><option value="suite">Suíte</option><option value="hospedes">Hóspedes</option><option value="escritorio">Escritório</option><option value="gatos">Gatos</option><option value="lavanderia">Lavanderia</option></select>
   
   <a href="tour.html">Imagens</a>
-  <button id="bTela">Tela cheia</button>
+  <button id="bQualidade">Qualidade alta</button><button id="bTela">Tela cheia</button>
 </div>
+<dialog id="referencia"><button id="fecharReferencia" aria-label="Fechar">×</button><h2 id="tituloReferencia"></h2><img id="imagemReferencia" alt="Simulação da proposta para este ambiente"><p>Simulação fotográfica de referência. A caminhada usa os novos elementos em 3D; aparência e medidas podem variar.</p></dialog>
 <div id="entrada"><div class="caixa vidro">
   <h1>Casa Parente</h1>
   <p id="msg">Carregando a casa… (a primeira vez demora um pouco)</p>
@@ -64,12 +68,14 @@ canvas{display:block}
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
+import {montarPropostas} from './propostas.js?v=4';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
 import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {SMAAPass} from 'three/addons/postprocessing/SMAAPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 const D = {"v": 1791345224, "portas": [{"nome": "escritorio", "x": -1.015, "y": 0.6, "ang": 0, "largura": 0.825, "abre": -90, "ini": 0.0}, {"nome": "lavabo", "x": -2.445, "y": 0.6, "ang": 0, "largura": 0.69, "abre": -90, "ini": 0.0}, {"nome": "hospedes", "x": -2.9, "y": 0.6, "ang": 180, "largura": 0.89, "abre": 90, "ini": 0.0}, {"nome": "wc_hospedes", "x": -2.692, "y": -0.777, "ang": -90, "largura": 0.66, "abre": 90, "ini": 0.0}, {"nome": "wc_master", "x": -11.46, "y": 0.405, "ang": -90, "largura": 0.74, "abre": 90, "ini": 0.0}, {"nome": "suite", "x": -5.815, "y": 0.722, "ang": 90, "largura": 1.01, "abre": 90, "ini": 0.0}, {"nome": "servico", "x": 3.627, "y": 8.735, "ang": 180, "largura": 0.953, "abre": -90, "ini": 0.0}, {"nome": "lavanderia", "x": 2.69, "y": 9.855, "ang": -90, "largura": 0.79, "abre": -90, "ini": 0.0}, {"nome": "gatos", "x": -0.06, "y": 9.705, "ang": -90, "largura": 0.74, "abre": -90, "ini": 0.0}, {"nome": "entrada", "x": 5.548, "y": 4.45, "ang": 90, "largura": 1.12, "abre": -90, "ini": -0.22}], "pisos": [[0, 0, 5.473, 8.66], [-5.74, 0.66, 0, 1.82], [-11.4, -3.18, -5.89, 1.77], [-12.79, -3.81, -11.52, 0.61], [-5.74, -3.72, -2.752, 0.54], [-2.632, -0.627, -1.465, 0.54], [-2.632, -3.72, -1.465, -0.747], [-1.185, -3.72, 1.804, -0.15], [-1.185, -0.15, -0.15, 0.54], [-1.95, 8.81, 4.335, 10.384]], "espelhos": [{"x": -9.132, "lado": 1, "pts": [[1.6872, 1.06], [1.6755, 1.1424], [1.6599, 1.2201], [1.6417, 1.2928], [1.622, 1.3607], [1.602, 1.425], [1.5821, 1.4872], [1.5626, 1.5485], [1.543, 1.61], [1.5228, 1.6717], [1.5011, 1.733], [1.4771, 1.7922], [1.4501, 1.8471], [1.4201, 1.8953], [1.3872, 1.9347], [1.352, 1.9638], [1.3152, 1.9819], [1.2776, 1.9896], [1.24, 1.9879], [1.2028, 1.9785], [1.1664, 1.963], [1.1306, 1.9428], [1.0955, 1.9187], [1.0609, 1.8907], [1.0269, 1.8583], [0.9937, 1.8207], [0.9618, 1.777], [0.9317, 1.7267], [0.9041, 1.6697], [0.8793, 1.6062], [0.8578, 1.5372], [0.8396, 1.4638], [0.8245, 1.3871], [0.8123, 1.3078], [0.8028, 1.2267], [0.7957, 1.1441], [0.7913, 1.06], [0.7899, 0.9748], [0.7922, 0.8892], [0.7988, 0.8043], [0.8104, 0.7218], [0.8273, 0.6438], [0.8495, 0.5724], [0.8765, 0.5095], [0.9074, 0.4564], [0.9409, 0.4131], [0.9757, 0.3789], [1.0108, 0.352], [1.0451, 0.33], [1.0784, 0.3105], [1.1106, 0.2912], [1.1422, 0.2708], [1.1739, 0.2491], [1.2063, 0.2268], [1.24, 0.2057], [1.2753, 0.188], [1.312, 0.1763], [1.3499, 0.1726], [1.3884, 0.1785], [1.4266, 0.1946], [1.4639, 0.2211], [1.4999, 0.2572], [1.534, 0.3021], [1.566, 0.3549], [1.5956, 0.4147], [1.6224, 0.481], [1.6459, 0.5531], [1.6657, 0.6307], [1.6809, 0.7129], [1.691, 0.7986], [1.6954, 0.8863], [1.6941, 0.9741]]}, {"x": -2.608, "lado": 1, "pts": [[0.0895, 1.55], [0.0825, 1.5825], [0.0731, 1.6135], [0.0619, 1.6429], [0.0491, 1.6706], [0.0352, 1.6967], [0.0204, 1.7214], [0.0048, 1.7448], [-0.0115, 1.767], [-0.0285, 1.7883], [-0.0463, 1.8084], [-0.0651, 1.8274], [-0.085, 1.8451], [-0.1061, 1.8612], [-0.1283, 1.8753], [-0.1517, 1.8872], [-0.1761, 1.8964], [-0.2013, 1.9026], [-0.227, 1.9057], [-0.2529, 1.9056], [-0.2788, 1.9022], [-0.3042, 1.8957], [-0.329, 1.8862], [-0.3529, 1.8739], [-0.3758, 1.8592], [-0.3976, 1.8424], [-0.4183, 1.8236], [-0.4378, 1.803], [-0.4563, 1.7808], [-0.4735, 1.7571], [-0.4895, 1.7318], [-0.504, 1.705], [-0.5171, 1.6767], [-0.5282, 1.6469], [-0.5372, 1.6156], [-0.5437, 1.5832], [-0.5474, 1.55], [-0.5479, 1.5163], [-0.5451, 1.4827], [-0.5388, 1.4497], [-0.5291, 1.4181], [-0.5161, 1.3882], [-0.5001, 1.3608], [-0.4815, 1.3361], [-0.4608, 1.3146], [-0.4385, 1.2962], [-0.4151, 1.281], [-0.3912, 1.2687], [-0.3671, 1.2589], [-0.3431, 1.2512], [-0.3194, 1.2452], [-0.2961, 1.2404], [-0.2731, 1.2364], [-0.2501, 1.2329], [-0.227, 1.23], [-0.2035, 1.2276], [-0.1794, 1.2259], [-0.1546, 1.2255], [-0.129, 1.2268], [-0.1028, 1.2304], [-0.0763, 1.2367], [-0.0498, 1.2464], [-0.024, 1.2597], [0.0007, 1.2768], [0.0235, 1.2978], [0.0438, 1.3224], [0.0612, 1.3503], [0.0752, 1.3809], [0.0855, 1.4135], [0.0919, 1.4475], [0.0946, 1.482], [0.0937, 1.5163]]}, {"x": -12.656, "lado": 1, "pts": [[-0.88, 1.24], [0.57, 1.24], [0.57, 2.08], [-0.88, 2.08]]}, {"x": -1.599, "lado": -1, "pts": [[-1.847, 1.22], [-0.797, 1.22], [-0.797, 2.05], [-1.847, 2.05]]}], "zonas": ["exterior", "pedra", "portas", "servico", "social", "suite", "sul", "varanda"], "lmax": 16.0, "inicio": {"x": 4.7, "y": 4.6, "rumo": -2.0}, "comodos": [{"nome": "Hall de entrada", "rot": "", "x0": 3.93, "y0": 4.05, "x1": 5.473, "y1": 5.49}, {"nome": "Sala de estar", "rot": "Sala", "x0": 0, "y0": 0, "x1": 5.473, "y1": 5.49}, {"nome": "Cozinha", "rot": "Cozinha", "x0": 0, "y0": 6.2, "x1": 4.335, "y1": 8.66}, {"nome": "Jantar", "rot": "", "x0": 0, "y0": 5.49, "x1": 4.335, "y1": 6.2}, {"nome": "Corredor", "rot": "Corredor", "x0": -5.74, "y0": 0.66, "x1": 0, "y1": 1.82}, {"nome": "Suíte master", "rot": "Suíte", "x0": -9.16, "y0": -2.71, "x1": -5.89, "y1": 1.77}, {"nome": "Closet", "rot": "Closet", "x0": -11.4, "y0": -3.18, "x1": -9.28, "y1": -0.39}, {"nome": "Passagem da suíte", "rot": "", "x0": -11.4, "y0": -0.39, "x1": -9.28, "y1": 0.61}, {"nome": "WC master", "rot": "WC", "x0": -12.79, "y0": -3.81, "x1": -11.52, "y1": 0.61}, {"nome": "Quarto de hóspedes", "rot": "Hóspedes", "x0": -5.74, "y0": -3.72, "x1": -2.752, "y1": 0.54}, {"nome": "Lavabo", "rot": "Lav.", "x0": -2.632, "y0": -0.627, "x1": -1.465, "y1": 0.54}, {"nome": "WC hóspedes", "rot": "WC", "x0": -2.632, "y0": -3.72, "x1": -1.465, "y1": -0.747}, {"nome": "Escritório", "rot": "Escritório", "x0": -1.185, "y0": -3.72, "x1": 1.804, "y1": -0.15}, {"nome": "Escritório", "rot": "", "x0": -1.185, "y0": -0.15, "x1": -0.15, "y1": 0.54}, {"nome": "Varanda gourmet", "rot": "Gourmet", "x0": -2.6, "y0": 6.9, "x1": -0.15, "y1": 8.66}, {"nome": "Varanda", "rot": "Varanda", "x0": -2.6, "y0": 1.94, "x1": -0.15, "y1": 6.9}, {"nome": "Lavanderia", "rot": "Lavand.", "x0": 0, "y0": 8.81, "x1": 2.63, "y1": 10.384}, {"nome": "Hall de serviço", "rot": "", "x0": 2.75, "y0": 8.81, "x1": 4.335, "y1": 10.384}, {"nome": "Quarto dos gatos", "rot": "Gatos", "x0": -1.95, "y0": 8.81, "x1": -0.12, "y1": 10.384}, {"nome": "Jacuzzi", "rot": "Jacuzzi", "x0": -5.75, "y0": 2.85, "x1": -2.85, "y1": 5.75}], "limites": [-13.389999999999999, -4.41, 6.0729999999999995, 10.984]};
 const TOQUE = matchMedia('(pointer:coarse)').matches;
@@ -84,14 +90,17 @@ render.toneMapping = THREE.AgXToneMapping;
 render.toneMappingExposure = 1.0;
 document.body.prepend(render.domElement);
 const cena = new THREE.Scene();
-const cam = new THREE.PerspectiveCamera(TOQUE ? 74 : 70, innerWidth / innerHeight, 0.04, 200);
+const cam = new THREE.PerspectiveCamera(TOQUE ? 68 : 62, innerWidth / innerHeight, 0.04, 200);
 cam.rotation.order = 'YXZ';
 let compositor = null;
+let ultimoQuadro = 0;
+const qualidade = {nivel:'alta', quadros:0, materiais:0};
 if (EFEITOS) {
   compositor = new EffectComposer(render);
   compositor.addPass(new RenderPass(cena, cam));
-  compositor.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.32, 0.55, 1.05));
+  compositor.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.16, 0.42, 1.15));
   compositor.addPass(new OutputPass());
+  compositor.addPass(new SMAAPass(innerWidth * render.getPixelRatio(), innerHeight * render.getPixelRatio()));
 }
 
 // ---------------------------------------------------------------- carregamento
@@ -107,11 +116,29 @@ function carregarGLB(url, ok, tentativa = 1){          // nova tentativa se a re
 const sufixo = TOQUE ? '_m' : '';
 const pmrem = new THREE.PMREMGenerator(render);
 let envVidro = null;
+const materiaisAssados = [];
+const refletores = [];
+const probes = [];
+function materialAssado(cor, luz) {
+  const m = new THREE.MeshPhysicalMaterial({map:cor, lightMap:luz,
+    lightMapIntensity:D.lmax * Math.PI, roughness:.72, metalness:0,
+    clearcoat:.03, clearcoatRoughness:.55, envMapIntensity:.20});
+  // A irradiância já veio do Cycles. O ambiente acrescenta apenas reflexos,
+  // sem iluminar as paredes duas vezes.
+  m.onBeforeCompile = sh => {
+    sh.fragmentShader = sh.fragmentShader.replace(
+      'vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;',
+      'vec3 bakedDiffuse = diffuseColor.rgb * texture2D(lightMap, vLightMapUv).rgb * lightMapIntensity * RECIPROCAL_PI;\nvec3 outgoingLight = bakedDiffuse + totalSpecular + totalEmissiveRadiance;');
+  };
+  m.customProgramCacheKey = () => 'casa-baked-gi-specular-v1';
+  if(envVidro)m.envMap=envVidro;
+  materiaisAssados.push(m);qualidade.materiais++;return m;
+}
 const vidros = [];
 texLoader.load('ceu.jpg?v=' + D.v, t => {
   t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace; cena.background = t;
   envVidro = pmrem.fromEquirectangular(t).texture;
-  vidros.forEach(m => { m.envMap = envVidro; m.needsUpdate = true; });
+  vidros.concat(materiaisAssados).forEach(m => { m.envMap = envVidro; m.needsUpdate = true; });
 });
 
 const PORTAS = {};            // nome -> {no, x, y, ang, largura, abre, ini, t, alvo}
@@ -119,13 +146,13 @@ for (const p of D.portas || []) PORTAS[p.nome] = {...p, t: 0, alvo: 0, no: null}
 const nosPortas = [];
 for (const z of D.zonas) {
   const luz = texLoader.load(`${z}_luz${sufixo}.jpg?v=${D.v}`);
-  luz.flipY = false; luz.colorSpace = THREE.SRGBColorSpace; luz.channel = 0;
+  luz.flipY = false; luz.colorSpace = THREE.SRGBColorSpace; luz.channel = 0; luz.anisotropy = render.capabilities.getMaxAnisotropy();
   const cor = texLoader.load(`${z}_cor${sufixo}.jpg?v=${D.v}`);
   cor.flipY = false; cor.colorSpace = THREE.SRGBColorSpace; cor.channel = 0;
   cor.anisotropy = TOQUE ? 4 : render.capabilities.getMaxAnisotropy();
   carregarGLB(`casa_${z}.glb?v=${D.v}`, g => {
     g.scene.traverse(o => {
-      if (o.isMesh) o.material = new THREE.MeshBasicMaterial({map: cor, lightMap: luz, lightMapIntensity: D.lmax * Math.PI});
+      if (o.isMesh) o.material = materialAssado(cor, luz);
       if (z === 'portas' && o.name.startsWith('PORTA_') && !(o.parent && o.parent.name.startsWith('PORTA_'))) {
         const p = PORTAS[o.name.slice(6)];
         if (p && !p.no) { p.no = o; o.userData.porta = p.nome; nosPortas.push(o); }
@@ -151,7 +178,9 @@ carregarGLB('extras.glb?v=' + D.v, g => {
     }
     else if (nome.startsWith('led_')) m = new THREE.MeshBasicMaterial({color: new THREE.Color(2.4, 2.0, 1.45)});
     else { m = new THREE.MeshBasicMaterial({map: m0.map || null, color: m0.map ? new THREE.Color(.80, .78, .74) : m0.color.clone().multiplyScalar(.9),
-            alphaTest: m0.map ? .5 : 0, side: THREE.DoubleSide}); }
+            alphaTest: m0.map ? .5 : 0, side: THREE.DoubleSide});
+      if(m.map)m.map.anisotropy=render.capabilities.getMaxAnisotropy();
+    }
     if (envVidro && m.isMeshStandardMaterial) m.envMap = envVidro;
     o.material = m;
   });
@@ -172,13 +201,13 @@ if (EFEITOS) {
         void main(){ vUv = textureMatrix * vec4(position, 1.0); vec4 m = modelMatrix * vec4(position, 1.0); vMundo = m.xyz; gl_Position = projectionMatrix * viewMatrix * m; }`,
       fragmentShader: `uniform sampler2D tDiffuse; varying vec4 vUv; varying vec3 vMundo;
         void main(){ vec3 v = normalize(cameraPosition - vMundo); float f = pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
-          vec4 r = texture2DProj(tDiffuse, vUv); gl_FragColor = vec4(r.rgb, 0.035 + 0.30 * f);
+          vec4 r = texture2DProj(tDiffuse, vUv); gl_FragColor = vec4(r.rgb, 0.025 + 0.18 * f);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }`}});
     espelho.material.transparent = true; espelho.material.depthWrite = false;
     espelho.rotation.x = -Math.PI / 2; espelho.position.y = 0.002;
-    cena.add(espelho);
+    cena.add(espelho);refletores.push(espelho);
   }
 }
 // espelhos que refletem de verdade (suíte, lavabo, armários-espelho dos banheiros)
@@ -186,14 +215,16 @@ if (EFEITOS) for (const e of D.espelhos || []) {
   const sh = new THREE.Shape(e.pts.map(([u, v]) => new THREE.Vector2(e.lado > 0 ? u : -u, v)));
   const r = new Reflector(new THREE.ShapeGeometry(sh), {textureWidth: 768, textureHeight: 768, color: 0xd6d6d4, clipBias: .003});
   r.rotation.y = e.lado > 0 ? Math.PI / 2 : -Math.PI / 2; r.position.x = e.x;
-  cena.add(r);
+  cena.add(r);refletores.push(r);
 }
+const propostas = montarPropostas(cena, gerente, render);
 let col = null;
 fetch('colisao.json?v=' + D.v).then(r => r.json()).then(j => {
   const dec = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
   col = {...j, piso: new Int8Array(dec(j.piso).buffer), dist: dec(j.dist)};
 });
 gerente.onLoad = () => {
+  // Reflexos prefiltrados: não interrompem a navegação com capturas de cubo.
   document.getElementById('msg').textContent = TOQUE ? 'Joystick para andar, arraste a tela para olhar. Toque numa porta para abrir ou fechar.' :
     'Clique para entrar. W A S D ou setas para andar, mouse para olhar, E ou clique para abrir portas.';
   barra.parentElement.style.display = 'none';
@@ -203,7 +234,7 @@ gerente.onLoad = () => {
 // ---------------------------------------------------------------- colisão (campo de distância de 5 cm)
 const RAIO = 0.17, ALTURA = 1.6, DEGRAU = 0.32;
 const eu = {x: D.inicio.x, y: D.inicio.y, olho: 1.6, rumo: D.inicio.rumo, inclina: -0.05, alt: 0, vx: 0, vy: 0, passo: 0};
-window.__casa = {eu, cam, D, PORTAS, andar: (...a) => andar(...a), dist: (...a) => dist(...a), piso: (...a) => piso(...a)};
+window.__casa = {eu, cam, D, PORTAS, propostas, cena, andar: (...a) => andar(...a), dist: (...a) => dist(...a), piso: (...a) => piso(...a)};
 function celula(x, y){
   const i = Math.floor((x - col.x0) / col.passo), j = Math.floor((y - col.y0) / col.passo);
   return (i < 0 || j < 0 || i >= col.nx || j >= col.ny) ? -1 : j * col.nx + i;
@@ -211,7 +242,7 @@ function celula(x, y){
 function piso(x, y){
   if (!col) return 0;
   const k = celula(x, y); if (k < 0) return null;
-  const v = col.piso[k]; return v === -128 ? null : v / 100;
+  const v = col.piso[k]; const hp=propostas.altura(x,y); return v === -128 ? null : (hp ?? v / 100);
 }
 function dist(x, y){
   if (!col) return 9;
@@ -249,7 +280,7 @@ function andar(dx, dy){
     }
     [x, y] = afastaDePortas(x, y);
     const h = piso(x, y);
-    if (dist(x, y) < RAIO - 0.03 || h === null || h - eu.alt > DEGRAU) continue;
+    if (dist(x, y) < RAIO - 0.03 || propostas.bloqueado(x,y) || h === null || h - eu.alt > DEGRAU) continue;
     eu.x = x; eu.y = y; eu.alt = h;
   }
 }
@@ -279,6 +310,7 @@ const dica = document.getElementById('dica');
 // ---------------------------------------------------------------- entrada do usuário
 const teclas = {};
 addEventListener('keydown', e => {
+  if(document.getElementById('referencia').open)return;
   teclas[e.code] = true;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   if ((e.code === 'KeyE' || e.code === 'KeyF') && !e.repeat) alternar(portaMirada() || portaProxima());
@@ -322,6 +354,18 @@ joy.addEventListener('pointerup', () => { jid = null; jv = {x: 0, y: 0}; pino.st
 function moverJoy(e){ const r = joy.getBoundingClientRect(); let dx = (e.clientX - r.left - r.width / 2) / (r.width / 2), dy = (e.clientY - r.top - r.height / 2) / (r.height / 2);
   const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; } jv = {x: dx, y: dy}; pino.style.transform = `translate(${dx * 34}px,${dy * 34}px)`; }
 
+
+const niveisQualidade = [{nome:'Alta',dpr:2},{nome:'Ultra',dpr:2.5},{nome:'Leve',dpr:1}];
+let nivelQualidade=0;
+document.getElementById('bQualidade').onclick=e=>{
+  nivelQualidade=(nivelQualidade+1)%niveisQualidade.length;
+  const q=niveisQualidade[nivelQualidade];qualidade.nivel=q.nome.toLowerCase();
+  render.setPixelRatio(Math.min(devicePixelRatio*q.dpr/2,q.dpr));
+  render.setSize(innerWidth,innerHeight);compositor?.setPixelRatio(render.getPixelRatio());compositor?.setSize(innerWidth,innerHeight);
+  e.currentTarget.textContent='Qualidade '+q.nome.toLowerCase();
+};
+window.__casaQualidade={qualidade,render,cena,cam,eu,PORTAS};
+
 // ---------------------------------------------------------------- planta
 const B = D.limites, mapa = document.getElementById('mapa');
 const sx = x => x - B[0], sy = y => B[3] - y;
@@ -337,7 +381,7 @@ const sx = x => x - B[0], sy = y => B[3] - y;
   svg.addEventListener('click', e => {
     const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
     const q = p.matrixTransform(svg.getScreenCTM().inverse()), x = q.x + B[0], y = B[3] - q.y, h = piso(x, y);
-    if (h !== null && dist(x, y) >= RAIO) { eu.x = x; eu.y = y; eu.alt = h; eu.olho = h + ALTURA; }
+    if (h !== null && dist(x, y) >= RAIO && !propostas.bloqueado(x,y)) { eu.x = x; eu.y = y; eu.alt = h; eu.olho = h + ALTURA; }
   });
 })();
 function atualizaMapa(){
@@ -352,6 +396,33 @@ function atualizaMapa(){
 }
 document.getElementById('bMapa').onclick = e => { mapa.classList.toggle('oculto'); e.currentTarget.classList.toggle('on'); };
 document.getElementById('bTela').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+
+
+function alternarPropostas(){
+ propostas.setAtivo(!propostas.ativo);
+ const b=document.getElementById('bPropostas');b.classList.toggle('on',propostas.ativo);b.setAttribute('aria-pressed',propostas.ativo);b.textContent=propostas.ativo?'Propostas: ligadas':'Propostas: desligadas';
+ if(propostas.ativo&&propostas.bloqueado(eu.x,eu.y)){eu.x=-5.95;eu.y=4.55;eu.alt=piso(eu.x,eu.y)??-.3;}
+}
+document.getElementById('bPropostas').onclick=alternarPropostas;
+addEventListener('keydown',e=>{if(e.code==='KeyP'&&!e.repeat)alternarPropostas();});
+const referencias=[[/Sala|Cozinha|Jantar/,'social','Sala, jantar e cozinha'],[/Hall de entrada|Corredor/,'entrada-corredor','Entrada e corredor'],[/Closet|Quarto de hóspedes/,'hospedes-closet','Hóspedes e closet'],[/Suíte|WC hóspedes/,'suite-wc-hospedes','Suíte e banheiro de hóspedes'],[/Escritório|gatos/,'escritorio-musica-pet','Escritório, música e gatos'],[/WC master|Lavabo|Lavanderia|serviço/,'banheiros-lavanderia','Banheiros e lavanderia']];
+document.getElementById('bReferencia').onclick=()=>{
+ document.exitPointerLock?.();Object.keys(teclas).forEach(k=>teclas[k]=false);eu.vx=eu.vy=0;
+ const nome=document.getElementById('local').textContent;
+ const r=referencias.find(a=>a[0].test(nome))||[null,'deck','Deck e jardim'];
+ document.getElementById('tituloReferencia').textContent=r[2];document.getElementById('imagemReferencia').src='propostas/'+r[1]+'.png';document.getElementById('referencia').showModal();
+};
+document.getElementById('fecharReferencia').onclick=()=>document.getElementById('referencia').close();
+
+
+const destinos={deck:[-6.4,2.1,-.55],sala:[3.5,4.25,3.1],suite:[-6.3,.75,-2],hospedes:[-3.1,-1.3,-1.6],escritorio:[.8,-1.1,2.7],gatos:[-.7,9.2,-.8],lavanderia:[1.9,9.3,1.5]};
+document.getElementById('irAmbiente').onchange=e=>{
+ const d=destinos[e.target.value];if(!d)return;
+ let alvo=null;
+ for(let r=0;r<=.8&&!alvo;r+=.1)for(let a=0;a<6.28;a+=.35){const x=d[0]+Math.cos(a)*r,y=d[1]+Math.sin(a)*r,h=piso(x,y);if(h!==null&&dist(x,y)>=RAIO&&!propostas.bloqueado(x,y)){alvo=[x,y,h];break;}}
+ if(alvo){[eu.x,eu.y,eu.alt]=alvo;eu.olho=eu.alt+ALTURA;eu.rumo=d[2];eu.inclina=-.06;eu.vx=eu.vy=0;atualizaMapa();}
+ e.target.value='';
+};
 
 // ---------------------------------------------------------------- laço
 addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); compositor?.setSize(innerWidth, innerHeight); });
@@ -390,7 +461,14 @@ let t0 = performance.now(), tm = 0, td = 0;
   eu.olho += (eu.alt + ALTURA - eu.olho) * Math.min(1, dt * 10);
   cam.position.set(eu.x, eu.olho + balanco, -eu.y);
   cam.rotation.set(eu.inclina, -eu.rumo, 0);
-  if (compositor) compositor.render(dt); else render.render(cena, cam);
+  if(t-ultimoQuadro>=1000/30){
+    // Espelhos fora do ambiente não precisam renderizar a casa novamente.
+    let maisPerto=null,menor=3.0;
+    for(const r of refletores.slice(1)){const d=r.position.distanceTo(cam.position);if(d<menor){menor=d;maisPerto=r;}}
+    for(const r of refletores.slice(1))r.visible=r===maisPerto;
+    ultimoQuadro=t;qualidade.quadros++;
+    if (compositor) compositor.render(dt); else render.render(cena, cam);
+  }
   if (t - tm > 80) { tm = t; atualizaMapa(); }
   if (t - td > 120) {
     td = t;
