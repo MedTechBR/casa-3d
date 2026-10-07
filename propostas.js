@@ -90,6 +90,60 @@ export function montarPropostas(cena, gerente, render) {
   // Plantação conceitual em volumes de canteiro; sem inventar espécie botânica.
   caixa('Canteiro lounge',-8.87,4.52,-.13,.42,3.84,.34,madeira,.025,true);
 
+  // Segunda etapa: composição, armazenamento e uso dos espaços existentes.
+  // Objetos pequenos permanecem apoiados nas superfícies, sem estreitar passagens.
+  const argila=material('argila',0xbb8061), verde=material('verde',0x5d7057);
+  function livro(nome,x,y,z,w=.24,d=.17,cor=marfim){caixa(nome,x,y,z,w,d,.025,cor,.003);}
+  function bandeja(nome,x,y,z,w=.38,d=.25){
+    caixa(nome,x,y,z,w,d,.025,madeira,.012);
+    caixa(nome+' borda',x,y+d/2,z+.025,w,.012,.04,madeira,.003);
+    caixa(nome+' borda',x,y-d/2,z+.025,w,.012,.04,madeira,.003);
+  }
+  // Sala: grupo de livros e cerâmica; apoio de leitura e almofada na poltrona.
+  livro('Livro de arte sala',2.63,1.70,.445,.28,.20);
+  livro('Livro de arte sala 2',2.64,1.70,.473,.26,.19,oliva);
+  vaso('Cerâmica mesa sala',3.03,1.70,.435);
+  almofada('Almofada poltrona',4.5,.58,.73,.38,.34,caramelo,-.45);
+  // Jantar: composição baixa, preservando a visão entre as pessoas.
+  bandeja('Bandeja jantar',1.65,5.38,.769,.42,.28);
+  vaso('Cerâmica jantar',1.60,5.38,.79);
+  cilindro('Vela jantar',1.8,5.38,.83,.035,.10,marfim);
+  // Varanda: banco-bar com três banquetas para conversar com quem cozinha.
+  for(const x of [-1.8,-1.15,-.5]){
+    const y=6.65;
+    caixa('Banqueta gourmet assento',x,y,.73,.39,.39,.08,areia,.035,true);
+    for(const dx of [-.14,.14])for(const dy of [-.14,.14])cilindro('Banqueta gourmet pé',x+dx,y+dy,.36,.016,.69,preto);
+    caixa('Banqueta apoio pés',x,y,.23,.31,.025,.025,preto,.005);
+  }
+  // Suíte: apoio organizado para leitura, composição discreta nos criados.
+  livro('Livro suíte',-8.6,.03,.64,.21,.15);
+  vaso('Vaso suíte',-8.67,.25,.65);
+  // Hóspedes: almofadas extras e enxoval coordenado em ambos os leitos.
+  for(const y of [-1.695,-3.509]){
+    caixa('Enxoval hóspedes marfim',-4.65,y,.615,1.1,.89,.018,marfim,.012);
+    almofada('Almofada hóspedes marfim',-5.35,y,.78,.39,.29,marfim,Math.PI/2);
+  }
+  // Escritório: prateleira de música e livros, mantendo a bancada existente.
+  caixa('Prateleira música',1.70,-2.86,1.12,.26,1.4,.045,madeira,.012);
+  for(let i=0;i<7;i++)caixa('Livro música',1.69,-3.34+i*.095,1.26,.18,.06,.24,i%2?verde:marfim,.003);
+  // Closet: acessórios agrupados, longe da faixa de passagem.
+  bandeja('Bandeja acessórios closet',-10.58,-1.26,.80,.35,.24);
+  cilindro('Porta joias',-10.58,-1.26,.86,.055,.09,argila);
+  // Lavabo e banheiros: bandejas e conjunto de acessórios em cerâmica.
+  for(const [x,y,z] of [[-12.41,-.74,.925],[-2.25,-1.61,.915],[-2.20,-.40,.915]]){
+    bandeja('Bandeja banheiro',x,y,z,.23,.19);
+    cilindro('Porta escovas',x+.08,y,z+.08,.035,.13,ceramica);
+  }
+  // Pet: nicho acolchoado próximo ao arranhador, sem plantas ao alcance dos gatos.
+  caixa('Cama pet base',-.75,9.97,.12,.62,.44,.10,madeira,.035,true);
+  caixa('Cama pet colchão',-.75,9.97,.20,.56,.38,.09,oliva,.04);
+  // Deck: mesa de apoio, cerâmica e luz baixa sob o banco.
+  cilindro('Mesa apoio deck',-8.05,5.07,.20,.18,.035,madeira);
+  cilindro('Mesa apoio deck pé',-8.05,5.07,-.02,.025,.42,preto);
+  vaso('Cerâmica lounge',-6.96,4.76,.22);
+  livro('Livro lounge',-7.1,4.8,.24,.20,.14);
+  for(const x of [-8.03,-7.15,-6.26])luz(x,5.6,-.02,.45);
+
   const ambiente=new THREE.HemisphereLight(0xfff0da,0x8c806b,.75);grupo.add(ambiente);
   let ativo=true;
   return {grupo,barreiras,materiais,setAtivo(v){ativo=!!v;grupo.visible=ativo;},get ativo(){return ativo;},
