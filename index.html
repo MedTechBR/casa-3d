@@ -35,6 +35,7 @@ canvas{display:block}
 #entrada .botao{display:inline-block;margin-top:14px;background:var(--acento);color:#1a120b;font-weight:600;padding:11px 20px;border-radius:12px}
 #barraCarga{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:16px;overflow:hidden}
 #barraCarga div{height:100%;width:0;background:var(--acento);transition:width .2s}
+#dica{position:fixed;left:50%;top:calc(50% + 26px);transform:translateX(-50%);font-size:12px;padding:6px 10px;border-radius:9px;background:rgba(0,0,0,.5);pointer-events:none;display:none;white-space:nowrap}
 #mira{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(255,255,255,.7);pointer-events:none;display:none}
 #joy{position:fixed;left:max(22px,env(safe-area-inset-left));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 70px);width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--borda);display:none;z-index:4}
 #joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.5)}
@@ -45,8 +46,8 @@ canvas{display:block}
 <body>
 <div id="topo" class="vidro"><div class="marca">Casa Parente · caminhar</div><div class="local" id="local">—</div></div>
 <div id="mapa" class="vidro"></div>
-<div id="ajuda" class="vidro"><b>W A S D</b> ou <b>setas</b>: andar · <b>Shift</b>: correr<br><b>Mouse</b>: olhar · <b>Q / E</b>: girar<br><b>Esc</b>: soltar o mouse · clique na planta para ir a um cômodo</div>
-<div id="mira"></div>
+<div id="ajuda" class="vidro"><b>W A S D</b> ou <b>setas</b>: andar · <b>Shift</b>: correr<br><b>Mouse</b>: olhar · <b>E</b> ou <b>clique</b>: abrir/fechar porta<br><b>Esc</b>: soltar o mouse · clique na planta para ir a um cômodo</div>
+<div id="mira"></div><div id="dica"></div>
 <div id="joy"><i></i></div>
 <div id="barra" class="vidro">
   <button id="bMapa" class="on">Planta</button>
@@ -65,11 +66,17 @@ canvas{display:block}
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
-const D = {"v": 1791336744, "zonas": ["exterior", "pedra", "servico", "social", "suite", "sul", "varanda"], "lmax": 16.0, "inicio": {"x": 4.7, "y": 4.6, "rumo": -2.0}, "comodos": [{"nome": "Hall de entrada", "rot": "", "x0": 3.93, "y0": 4.05, "x1": 5.473, "y1": 5.49}, {"nome": "Sala de estar", "rot": "Sala", "x0": 0, "y0": 0, "x1": 5.473, "y1": 5.49}, {"nome": "Cozinha", "rot": "Cozinha", "x0": 0, "y0": 6.2, "x1": 4.335, "y1": 8.66}, {"nome": "Jantar", "rot": "", "x0": 0, "y0": 5.49, "x1": 4.335, "y1": 6.2}, {"nome": "Corredor", "rot": "Corredor", "x0": -5.74, "y0": 0.66, "x1": 0, "y1": 1.82}, {"nome": "Suíte master", "rot": "Suíte", "x0": -9.16, "y0": -2.71, "x1": -5.89, "y1": 1.77}, {"nome": "Closet", "rot": "Closet", "x0": -11.4, "y0": -3.18, "x1": -9.28, "y1": -0.39}, {"nome": "Passagem da suíte", "rot": "", "x0": -11.4, "y0": -0.39, "x1": -9.28, "y1": 0.61}, {"nome": "WC master", "rot": "WC", "x0": -12.79, "y0": -3.81, "x1": -11.52, "y1": 0.61}, {"nome": "Quarto de hóspedes", "rot": "Hóspedes", "x0": -5.74, "y0": -3.72, "x1": -2.752, "y1": 0.54}, {"nome": "Lavabo", "rot": "Lav.", "x0": -2.632, "y0": -0.627, "x1": -1.465, "y1": 0.54}, {"nome": "WC hóspedes", "rot": "WC", "x0": -2.632, "y0": -3.72, "x1": -1.465, "y1": -0.747}, {"nome": "Escritório", "rot": "Escritório", "x0": -1.185, "y0": -3.72, "x1": 1.804, "y1": -0.15}, {"nome": "Escritório", "rot": "", "x0": -1.185, "y0": -0.15, "x1": -0.15, "y1": 0.54}, {"nome": "Varanda gourmet", "rot": "Gourmet", "x0": -2.6, "y0": 6.9, "x1": -0.15, "y1": 8.66}, {"nome": "Varanda", "rot": "Varanda", "x0": -2.6, "y0": 1.94, "x1": -0.15, "y1": 6.9}, {"nome": "Lavanderia", "rot": "Lavand.", "x0": 0, "y0": 8.81, "x1": 2.63, "y1": 10.384}, {"nome": "Hall de serviço", "rot": "", "x0": 2.75, "y0": 8.81, "x1": 4.335, "y1": 10.384}, {"nome": "Quarto dos gatos", "rot": "Gatos", "x0": -1.95, "y0": 8.81, "x1": -0.12, "y1": 10.384}, {"nome": "Jacuzzi", "rot": "Jacuzzi", "x0": -5.75, "y0": 2.85, "x1": -2.85, "y1": 5.75}], "limites": [-13.389999999999999, -4.41, 6.0729999999999995, 10.984]};
+import {Reflector} from 'three/addons/objects/Reflector.js';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
+const D = {"v": 1791345224, "portas": [{"nome": "escritorio", "x": -1.015, "y": 0.6, "ang": 0, "largura": 0.825, "abre": -90, "ini": 0.0}, {"nome": "lavabo", "x": -2.445, "y": 0.6, "ang": 0, "largura": 0.69, "abre": -90, "ini": 0.0}, {"nome": "hospedes", "x": -2.9, "y": 0.6, "ang": 180, "largura": 0.89, "abre": 90, "ini": 0.0}, {"nome": "wc_hospedes", "x": -2.692, "y": -0.777, "ang": -90, "largura": 0.66, "abre": 90, "ini": 0.0}, {"nome": "wc_master", "x": -11.46, "y": 0.405, "ang": -90, "largura": 0.74, "abre": 90, "ini": 0.0}, {"nome": "suite", "x": -5.815, "y": 0.722, "ang": 90, "largura": 1.01, "abre": 90, "ini": 0.0}, {"nome": "servico", "x": 3.627, "y": 8.735, "ang": 180, "largura": 0.953, "abre": -90, "ini": 0.0}, {"nome": "lavanderia", "x": 2.69, "y": 9.855, "ang": -90, "largura": 0.79, "abre": -90, "ini": 0.0}, {"nome": "gatos", "x": -0.06, "y": 9.705, "ang": -90, "largura": 0.74, "abre": -90, "ini": 0.0}, {"nome": "entrada", "x": 5.548, "y": 4.45, "ang": 90, "largura": 1.12, "abre": -90, "ini": -0.22}], "pisos": [[0, 0, 5.473, 8.66], [-5.74, 0.66, 0, 1.82], [-11.4, -3.18, -5.89, 1.77], [-12.79, -3.81, -11.52, 0.61], [-5.74, -3.72, -2.752, 0.54], [-2.632, -0.627, -1.465, 0.54], [-2.632, -3.72, -1.465, -0.747], [-1.185, -3.72, 1.804, -0.15], [-1.185, -0.15, -0.15, 0.54], [-1.95, 8.81, 4.335, 10.384]], "espelhos": [{"x": -9.132, "lado": 1, "pts": [[1.6872, 1.06], [1.6755, 1.1424], [1.6599, 1.2201], [1.6417, 1.2928], [1.622, 1.3607], [1.602, 1.425], [1.5821, 1.4872], [1.5626, 1.5485], [1.543, 1.61], [1.5228, 1.6717], [1.5011, 1.733], [1.4771, 1.7922], [1.4501, 1.8471], [1.4201, 1.8953], [1.3872, 1.9347], [1.352, 1.9638], [1.3152, 1.9819], [1.2776, 1.9896], [1.24, 1.9879], [1.2028, 1.9785], [1.1664, 1.963], [1.1306, 1.9428], [1.0955, 1.9187], [1.0609, 1.8907], [1.0269, 1.8583], [0.9937, 1.8207], [0.9618, 1.777], [0.9317, 1.7267], [0.9041, 1.6697], [0.8793, 1.6062], [0.8578, 1.5372], [0.8396, 1.4638], [0.8245, 1.3871], [0.8123, 1.3078], [0.8028, 1.2267], [0.7957, 1.1441], [0.7913, 1.06], [0.7899, 0.9748], [0.7922, 0.8892], [0.7988, 0.8043], [0.8104, 0.7218], [0.8273, 0.6438], [0.8495, 0.5724], [0.8765, 0.5095], [0.9074, 0.4564], [0.9409, 0.4131], [0.9757, 0.3789], [1.0108, 0.352], [1.0451, 0.33], [1.0784, 0.3105], [1.1106, 0.2912], [1.1422, 0.2708], [1.1739, 0.2491], [1.2063, 0.2268], [1.24, 0.2057], [1.2753, 0.188], [1.312, 0.1763], [1.3499, 0.1726], [1.3884, 0.1785], [1.4266, 0.1946], [1.4639, 0.2211], [1.4999, 0.2572], [1.534, 0.3021], [1.566, 0.3549], [1.5956, 0.4147], [1.6224, 0.481], [1.6459, 0.5531], [1.6657, 0.6307], [1.6809, 0.7129], [1.691, 0.7986], [1.6954, 0.8863], [1.6941, 0.9741]]}, {"x": -2.608, "lado": 1, "pts": [[0.0895, 1.55], [0.0825, 1.5825], [0.0731, 1.6135], [0.0619, 1.6429], [0.0491, 1.6706], [0.0352, 1.6967], [0.0204, 1.7214], [0.0048, 1.7448], [-0.0115, 1.767], [-0.0285, 1.7883], [-0.0463, 1.8084], [-0.0651, 1.8274], [-0.085, 1.8451], [-0.1061, 1.8612], [-0.1283, 1.8753], [-0.1517, 1.8872], [-0.1761, 1.8964], [-0.2013, 1.9026], [-0.227, 1.9057], [-0.2529, 1.9056], [-0.2788, 1.9022], [-0.3042, 1.8957], [-0.329, 1.8862], [-0.3529, 1.8739], [-0.3758, 1.8592], [-0.3976, 1.8424], [-0.4183, 1.8236], [-0.4378, 1.803], [-0.4563, 1.7808], [-0.4735, 1.7571], [-0.4895, 1.7318], [-0.504, 1.705], [-0.5171, 1.6767], [-0.5282, 1.6469], [-0.5372, 1.6156], [-0.5437, 1.5832], [-0.5474, 1.55], [-0.5479, 1.5163], [-0.5451, 1.4827], [-0.5388, 1.4497], [-0.5291, 1.4181], [-0.5161, 1.3882], [-0.5001, 1.3608], [-0.4815, 1.3361], [-0.4608, 1.3146], [-0.4385, 1.2962], [-0.4151, 1.281], [-0.3912, 1.2687], [-0.3671, 1.2589], [-0.3431, 1.2512], [-0.3194, 1.2452], [-0.2961, 1.2404], [-0.2731, 1.2364], [-0.2501, 1.2329], [-0.227, 1.23], [-0.2035, 1.2276], [-0.1794, 1.2259], [-0.1546, 1.2255], [-0.129, 1.2268], [-0.1028, 1.2304], [-0.0763, 1.2367], [-0.0498, 1.2464], [-0.024, 1.2597], [0.0007, 1.2768], [0.0235, 1.2978], [0.0438, 1.3224], [0.0612, 1.3503], [0.0752, 1.3809], [0.0855, 1.4135], [0.0919, 1.4475], [0.0946, 1.482], [0.0937, 1.5163]]}, {"x": -12.656, "lado": 1, "pts": [[-0.88, 1.24], [0.57, 1.24], [0.57, 2.08], [-0.88, 2.08]]}, {"x": -1.599, "lado": -1, "pts": [[-1.847, 1.22], [-0.797, 1.22], [-0.797, 2.05], [-1.847, 2.05]]}], "zonas": ["exterior", "pedra", "portas", "servico", "social", "suite", "sul", "varanda"], "lmax": 16.0, "inicio": {"x": 4.7, "y": 4.6, "rumo": -2.0}, "comodos": [{"nome": "Hall de entrada", "rot": "", "x0": 3.93, "y0": 4.05, "x1": 5.473, "y1": 5.49}, {"nome": "Sala de estar", "rot": "Sala", "x0": 0, "y0": 0, "x1": 5.473, "y1": 5.49}, {"nome": "Cozinha", "rot": "Cozinha", "x0": 0, "y0": 6.2, "x1": 4.335, "y1": 8.66}, {"nome": "Jantar", "rot": "", "x0": 0, "y0": 5.49, "x1": 4.335, "y1": 6.2}, {"nome": "Corredor", "rot": "Corredor", "x0": -5.74, "y0": 0.66, "x1": 0, "y1": 1.82}, {"nome": "Suíte master", "rot": "Suíte", "x0": -9.16, "y0": -2.71, "x1": -5.89, "y1": 1.77}, {"nome": "Closet", "rot": "Closet", "x0": -11.4, "y0": -3.18, "x1": -9.28, "y1": -0.39}, {"nome": "Passagem da suíte", "rot": "", "x0": -11.4, "y0": -0.39, "x1": -9.28, "y1": 0.61}, {"nome": "WC master", "rot": "WC", "x0": -12.79, "y0": -3.81, "x1": -11.52, "y1": 0.61}, {"nome": "Quarto de hóspedes", "rot": "Hóspedes", "x0": -5.74, "y0": -3.72, "x1": -2.752, "y1": 0.54}, {"nome": "Lavabo", "rot": "Lav.", "x0": -2.632, "y0": -0.627, "x1": -1.465, "y1": 0.54}, {"nome": "WC hóspedes", "rot": "WC", "x0": -2.632, "y0": -3.72, "x1": -1.465, "y1": -0.747}, {"nome": "Escritório", "rot": "Escritório", "x0": -1.185, "y0": -3.72, "x1": 1.804, "y1": -0.15}, {"nome": "Escritório", "rot": "", "x0": -1.185, "y0": -0.15, "x1": -0.15, "y1": 0.54}, {"nome": "Varanda gourmet", "rot": "Gourmet", "x0": -2.6, "y0": 6.9, "x1": -0.15, "y1": 8.66}, {"nome": "Varanda", "rot": "Varanda", "x0": -2.6, "y0": 1.94, "x1": -0.15, "y1": 6.9}, {"nome": "Lavanderia", "rot": "Lavand.", "x0": 0, "y0": 8.81, "x1": 2.63, "y1": 10.384}, {"nome": "Hall de serviço", "rot": "", "x0": 2.75, "y0": 8.81, "x1": 4.335, "y1": 10.384}, {"nome": "Quarto dos gatos", "rot": "Gatos", "x0": -1.95, "y0": 8.81, "x1": -0.12, "y1": 10.384}, {"nome": "Jacuzzi", "rot": "Jacuzzi", "x0": -5.75, "y0": 2.85, "x1": -2.85, "y1": 5.75}], "limites": [-13.389999999999999, -4.41, 6.0729999999999995, 10.984]};
 const TOQUE = matchMedia('(pointer:coarse)').matches;
+const EFEITOS = !TOQUE;            // reflexo do piso e brilho das luzes só no computador
 
 // ---------------------------------------------------------------- renderizador
-const render = new THREE.WebGLRenderer({antialias: !TOQUE, powerPreference:'high-performance'});
+const render = new THREE.WebGLRenderer({antialias: true, powerPreference: 'high-performance'});
 render.setPixelRatio(Math.min(devicePixelRatio, TOQUE ? 1.5 : 2));
 render.setSize(innerWidth, innerHeight);
 render.outputColorSpace = THREE.SRGBColorSpace;
@@ -77,8 +84,15 @@ render.toneMapping = THREE.AgXToneMapping;
 render.toneMappingExposure = 1.0;
 document.body.prepend(render.domElement);
 const cena = new THREE.Scene();
-const cam = new THREE.PerspectiveCamera(TOQUE ? 72 : 68, innerWidth / innerHeight, 0.05, 200);
+const cam = new THREE.PerspectiveCamera(TOQUE ? 74 : 70, innerWidth / innerHeight, 0.04, 200);
 cam.rotation.order = 'YXZ';
+let compositor = null;
+if (EFEITOS) {
+  compositor = new EffectComposer(render);
+  compositor.addPass(new RenderPass(cena, cam));
+  compositor.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.32, 0.55, 1.05));
+  compositor.addPass(new OutputPass());
+}
 
 // ---------------------------------------------------------------- carregamento
 const gerente = new THREE.LoadingManager();
@@ -87,96 +101,225 @@ gerente.onProgress = (u, a, t) => barra.style.width = (a / t * 100).toFixed(0) +
 const draco = new DRACOLoader(gerente); draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 const gltf = new GLTFLoader(gerente); gltf.setDRACOLoader(draco);
 const texLoader = new THREE.TextureLoader(gerente);
+function carregarGLB(url, ok, tentativa = 1){          // nova tentativa se a rede falhar
+  gltf.load(url, ok, undefined, () => { if (tentativa < 4) setTimeout(() => carregarGLB(url, ok, tentativa + 1), 800 * tentativa); });
+}
 const sufixo = TOQUE ? '_m' : '';
+const pmrem = new THREE.PMREMGenerator(render);
+let envVidro = null;
+const vidros = [];
+texLoader.load('ceu.jpg?v=' + D.v, t => {
+  t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace; cena.background = t;
+  envVidro = pmrem.fromEquirectangular(t).texture;
+  vidros.forEach(m => { m.envMap = envVidro; m.needsUpdate = true; });
+});
 
-texLoader.load('ceu.jpg?v=' + D.v, t => { t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace; cena.background = t; });
-
+const PORTAS = {};            // nome -> {no, x, y, ang, largura, abre, ini, t, alvo}
+for (const p of D.portas || []) PORTAS[p.nome] = {...p, t: 0, alvo: 0, no: null};
+const nosPortas = [];
 for (const z of D.zonas) {
   const luz = texLoader.load(`${z}_luz${sufixo}.jpg?v=${D.v}`);
   luz.flipY = false; luz.colorSpace = THREE.SRGBColorSpace; luz.channel = 0;
   const cor = texLoader.load(`${z}_cor${sufixo}.jpg?v=${D.v}`);
   cor.flipY = false; cor.colorSpace = THREE.SRGBColorSpace; cor.channel = 0;
-  cor.anisotropy = TOQUE ? 2 : render.capabilities.getMaxAnisotropy();
-  gltf.load(`casa_${z}.glb?v=${D.v}`, g => {
+  cor.anisotropy = TOQUE ? 4 : render.capabilities.getMaxAnisotropy();
+  carregarGLB(`casa_${z}.glb?v=${D.v}`, g => {
     g.scene.traverse(o => {
-      if (!o.isMesh) return;
-      o.material = new THREE.MeshBasicMaterial({map: cor, lightMap: luz, lightMapIntensity: D.lmax * Math.PI});
+      if (o.isMesh) o.material = new THREE.MeshBasicMaterial({map: cor, lightMap: luz, lightMapIntensity: D.lmax * Math.PI});
+      if (z === 'portas' && o.name.startsWith('PORTA_') && !(o.parent && o.parent.name.startsWith('PORTA_'))) {
+        const p = PORTAS[o.name.slice(6)];
+        if (p && !p.no) { p.no = o; o.userData.porta = p.nome; nosPortas.push(o); }
+      }
     });
     cena.add(g.scene);
   });
 }
-gltf.load('extras.glb?v=' + D.v, g => {
+carregarGLB('extras.glb?v=' + D.v, g => {
   g.scene.traverse(o => {
     if (!o.isMesh) return;
     const nome = (o.name + ' ' + (o.material.name || '')).toLowerCase(), m0 = o.material;
     let m;
-    if (nome.includes('voal')) m = new THREE.MeshBasicMaterial({color: 0xe6dfd2, transparent: true, opacity: .78, side: THREE.DoubleSide, depthWrite: false});
+    if (nome.includes('voal')) m = new THREE.MeshBasicMaterial({color: 0xe6dfd2, transparent: true, opacity: .8, side: THREE.DoubleSide, depthWrite: false});
     else if (nome.includes('tela de prote')) m = new THREE.MeshBasicMaterial({color: 0x222222, transparent: true, opacity: .45, depthWrite: false});
-    else if (nome.includes('água') || nome.includes('agua')) m = new THREE.MeshBasicMaterial({color: 0x9ccac4, transparent: true, opacity: .85});
-    else if (nome.includes('vidro') || nome.includes('cristal') || nome.includes('claraboia')) m = new THREE.MeshBasicMaterial({color: 0xdfe9e6, transparent: true, opacity: .10, depthWrite: false, side: THREE.DoubleSide});
-    else if (nome.startsWith('led_')) m = new THREE.MeshBasicMaterial({color: new THREE.Color(1.6, 1.35, 1.0)});
-    else { m = new THREE.MeshBasicMaterial({map: m0.map || null, color: m0.map ? new THREE.Color(.82, .80, .76) : m0.color.clone().multiplyScalar(.9),
-            alphaTest: m0.map ? .5 : 0, transparent: false, side: THREE.DoubleSide}); }
+    else if (nome.includes('água') || nome.includes('agua')) {
+      m = new THREE.MeshStandardMaterial({color: 0x5f8f8a, roughness: .02, metalness: 0, transparent: true, opacity: .9, envMapIntensity: 1.2});
+      vidros.push(m);
+    } else if (nome.includes('vidro') || nome.includes('cristal') || nome.includes('claraboia')) {
+      m = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: .03, metalness: .0, transparent: true, opacity: .14,
+                                          depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.6});
+      vidros.push(m);
+    }
+    else if (nome.startsWith('led_')) m = new THREE.MeshBasicMaterial({color: new THREE.Color(2.4, 2.0, 1.45)});
+    else { m = new THREE.MeshBasicMaterial({map: m0.map || null, color: m0.map ? new THREE.Color(.80, .78, .74) : m0.color.clone().multiplyScalar(.9),
+            alphaTest: m0.map ? .5 : 0, side: THREE.DoubleSide}); }
+    if (envVidro && m.isMeshStandardMaterial) m.envMap = envVidro;
     o.material = m;
   });
   cena.add(g.scene);
 });
-let colisao = null;
-fetch('colisao.json?v=' + D.v).then(r => r.json()).then(j => colisao = j);
+// luz ambiente só para os materiais "Standard" (vidro e água refletem o céu; o resto já vem assado)
+cena.add(new THREE.HemisphereLight(0xffffff, 0x777066, 0.35));
+
+// reflexo do porcelanato: espelho translúcido com Fresnel sobre o piso interno
+if (EFEITOS) {
+  const formas = (D.pisos || []).map(([x0, y0, x1, y1]) => { const s = new THREE.Shape(); s.moveTo(x0, y0); s.lineTo(x1, y0); s.lineTo(x1, y1); s.lineTo(x0, y1); return s; });
+  if (formas.length) {
+    const geo = new THREE.ShapeGeometry(formas);
+    const espelho = new Reflector(geo, {textureWidth: Math.round(innerWidth * .6), textureHeight: Math.round(innerHeight * .6), clipBias: .003, shader: {
+      name: 'ReflexoPiso',
+      uniforms: {color: {value: null}, tDiffuse: {value: null}, textureMatrix: {value: null}},
+      vertexShader: `uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vMundo;
+        void main(){ vUv = textureMatrix * vec4(position, 1.0); vec4 m = modelMatrix * vec4(position, 1.0); vMundo = m.xyz; gl_Position = projectionMatrix * viewMatrix * m; }`,
+      fragmentShader: `uniform sampler2D tDiffuse; varying vec4 vUv; varying vec3 vMundo;
+        void main(){ vec3 v = normalize(cameraPosition - vMundo); float f = pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
+          vec4 r = texture2DProj(tDiffuse, vUv); gl_FragColor = vec4(r.rgb, 0.035 + 0.30 * f);
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+        }`}});
+    espelho.material.transparent = true; espelho.material.depthWrite = false;
+    espelho.rotation.x = -Math.PI / 2; espelho.position.y = 0.002;
+    cena.add(espelho);
+  }
+}
+// espelhos que refletem de verdade (suíte, lavabo, armários-espelho dos banheiros)
+if (EFEITOS) for (const e of D.espelhos || []) {
+  const sh = new THREE.Shape(e.pts.map(([u, v]) => new THREE.Vector2(e.lado > 0 ? u : -u, v)));
+  const r = new Reflector(new THREE.ShapeGeometry(sh), {textureWidth: 768, textureHeight: 768, color: 0xd6d6d4, clipBias: .003});
+  r.rotation.y = e.lado > 0 ? Math.PI / 2 : -Math.PI / 2; r.position.x = e.x;
+  cena.add(r);
+}
+let col = null;
+fetch('colisao.json?v=' + D.v).then(r => r.json()).then(j => {
+  const dec = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
+  col = {...j, piso: new Int8Array(dec(j.piso).buffer), dist: dec(j.dist)};
+});
 gerente.onLoad = () => {
-  document.getElementById('msg').textContent = TOQUE ? 'Use o joystick para andar e arraste a tela para olhar em volta.' : 'Clique para entrar. W A S D ou setas para andar, mouse para olhar.';
+  document.getElementById('msg').textContent = TOQUE ? 'Joystick para andar, arraste a tela para olhar. Toque numa porta para abrir ou fechar.' :
+    'Clique para entrar. W A S D ou setas para andar, mouse para olhar, E ou clique para abrir portas.';
   barra.parentElement.style.display = 'none';
   document.getElementById('btEntrar').style.display = 'inline-block';
 };
 
-// ---------------------------------------------------------------- jogador (coordenadas da maquete: x leste, y norte)
-const eu = {x: D.inicio.x, y: D.inicio.y, olho: 1.6, rumo: D.inicio.rumo, inclina: -0.05, alt: 0};
-const ALTURA = 1.6, RAIO = 0.22;
-window.__casa = {eu, cam, D};
+// ---------------------------------------------------------------- colisão (campo de distância de 5 cm)
+const RAIO = 0.17, ALTURA = 1.6, DEGRAU = 0.32;
+const eu = {x: D.inicio.x, y: D.inicio.y, olho: 1.6, rumo: D.inicio.rumo, inclina: -0.05, alt: 0, vx: 0, vy: 0, passo: 0};
+window.__casa = {eu, cam, D, PORTAS, andar: (...a) => andar(...a), dist: (...a) => dist(...a), piso: (...a) => piso(...a)};
+function celula(x, y){
+  const i = Math.floor((x - col.x0) / col.passo), j = Math.floor((y - col.y0) / col.passo);
+  return (i < 0 || j < 0 || i >= col.nx || j >= col.ny) ? -1 : j * col.nx + i;
+}
 function piso(x, y){
-  if (!colisao) return 0;
-  const i = Math.floor((x - colisao.x0) / colisao.passo), j = Math.floor((y - colisao.y0) / colisao.passo);
-  if (i < 0 || j < 0 || i >= colisao.nx || j >= colisao.ny) return null;
-  return colisao.piso[j][i];
+  if (!col) return 0;
+  const k = celula(x, y); if (k < 0) return null;
+  const v = col.piso[k]; return v === -128 ? null : v / 100;
 }
-function livre(x, y, zAtual){
-  for (const [dx, dy] of [[0,0],[RAIO,0],[-RAIO,0],[0,RAIO],[0,-RAIO],[RAIO*.7,RAIO*.7],[-RAIO*.7,RAIO*.7],[RAIO*.7,-RAIO*.7],[-RAIO*.7,-RAIO*.7]]) {
-    const h = piso(x + dx, y + dy);
-    if (h === null || h - zAtual > 0.32) return false;
+function dist(x, y){
+  if (!col) return 9;
+  const fx = (x - col.x0) / col.passo - .5, fy = (y - col.y0) / col.passo - .5;
+  const i = Math.floor(fx), j = Math.floor(fy), u = fx - i, w = fy - j;
+  const g = (a, b) => (a < 0 || b < 0 || a >= col.nx || b >= col.ny) ? 0 : col.dist[b * col.nx + a] / 100;
+  return (g(i, j) * (1 - u) + g(i + 1, j) * u) * (1 - w) + (g(i, j + 1) * (1 - u) + g(i + 1, j + 1) * u) * w;
+}
+function segPorta(p){
+  const a = THREE.MathUtils.degToRad(p.ang + p.abre * p.t), cx = Math.cos(a), cy = Math.sin(a);
+  return [p.x + cx * p.ini, p.y + cy * p.ini, p.x + cx * (p.ini + p.largura), p.y + cy * (p.ini + p.largura)];
+}
+function afastaDePortas(x, y){
+  for (const p of Object.values(PORTAS)) {
+    if (!p.no) continue;
+    const [ax, ay, bx, by] = segPorta(p), ex = bx - ax, ey = by - ay;
+    const k = Math.max(0, Math.min(1, ((x - ax) * ex + (y - ay) * ey) / (ex * ex + ey * ey)));
+    const qx = ax + ex * k, qy = ay + ey * k, dx = x - qx, dy = y - qy, d = Math.hypot(dx, dy), lim = RAIO + 0.03;
+    if (d < lim) {
+      if (d < 1e-4) { x += -ey / Math.hypot(ex, ey) * lim; y += ex / Math.hypot(ex, ey) * lim; }
+      else { x = qx + dx / d * lim; y = qy + dy / d * lim; }
+    }
   }
-  return true;
+  return [x, y];
 }
+function andar(dx, dy){
+  const n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 0.025));
+  for (let s = 0; s < n; s++) {
+    let x = eu.x + dx / n, y = eu.y + dy / n;
+    for (let it = 0; it < 4; it++) {           // desliza ao longo da parede em vez de travar
+      const d = dist(x, y); if (d >= RAIO) break;
+      const e = 0.03, gx = dist(x + e, y) - dist(x - e, y), gy = dist(x, y + e) - dist(x, y - e), gn = Math.hypot(gx, gy);
+      if (gn < 1e-5) break;
+      x += gx / gn * (RAIO - d + 0.002); y += gy / gn * (RAIO - d + 0.002);
+    }
+    [x, y] = afastaDePortas(x, y);
+    const h = piso(x, y);
+    if (dist(x, y) < RAIO - 0.03 || h === null || h - eu.alt > DEGRAU) continue;
+    eu.x = x; eu.y = y; eu.alt = h;
+  }
+}
+
+// ---------------------------------------------------------------- portas: clique, tecla E e abertura ao se aproximar
+const raio = new THREE.Raycaster(); raio.far = 3.2;
+function portaMirada(ndc){
+  raio.setFromCamera(ndc || new THREE.Vector2(0, 0), cam);
+  const hit = raio.intersectObjects(nosPortas, true)[0];
+  if (!hit) return null;
+  let o = hit.object; while (o && !o.userData.porta) o = o.parent;
+  return o ? PORTAS[o.userData.porta] : null;
+}
+function alternar(p){ if (p) p.alvo = p.alvo > .5 ? 0 : 1; }
+function portaProxima(){
+  let melhor = null, menor = 2.3;
+  for (const p of Object.values(PORTAS)) {
+    if (!p.no) continue;
+    const [ax, ay, bx, by] = segPorta(p), mx = (ax + bx) / 2, my = (ay + by) / 2, dx = mx - eu.x, dy = my - eu.y, d = Math.hypot(dx, dy);
+    const frente = (Math.sin(eu.rumo) * dx + Math.cos(eu.rumo) * dy) / (d || 1);
+    if (d < menor && frente > .35) { menor = d; melhor = p; }
+  }
+  return melhor;
+}
+const dica = document.getElementById('dica');
+
+// ---------------------------------------------------------------- entrada do usuário
 const teclas = {};
-addEventListener('keydown', e => { teclas[e.code] = true; if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault(); });
+addEventListener('keydown', e => {
+  teclas[e.code] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if ((e.code === 'KeyE' || e.code === 'KeyF') && !e.repeat) alternar(portaMirada() || portaProxima());
+});
 addEventListener('keyup', e => teclas[e.code] = false);
 addEventListener('blur', () => Object.keys(teclas).forEach(k => teclas[k] = false));
-
-// mouse (pointer lock) e toque
 const entrada = document.getElementById('entrada'), mira = document.getElementById('mira');
 entrada.onclick = () => {
   if (document.getElementById('btEntrar').style.display === 'none') return;
   entrada.style.display = 'none';
   if (!TOQUE) render.domElement.requestPointerLock?.();
 };
-render.domElement.addEventListener('click', () => { if (!TOQUE && document.pointerLockElement !== render.domElement) render.domElement.requestPointerLock?.(); });
+render.domElement.addEventListener('click', e => {
+  if (TOQUE) return;
+  if (document.pointerLockElement !== render.domElement) {
+    const p = portaMirada(new THREE.Vector2(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1));
+    if (p) { alternar(p); return; }
+    render.domElement.requestPointerLock?.();
+  } else alternar(portaMirada());
+});
 document.addEventListener('pointerlockchange', () => mira.style.display = document.pointerLockElement ? 'block' : 'none');
 addEventListener('mousemove', e => {
   if (document.pointerLockElement !== render.domElement) return;
-  eu.rumo += e.movementX * 0.0022; eu.inclina = Math.max(-1.3, Math.min(1.3, eu.inclina - e.movementY * 0.0022));
+  eu.rumo += e.movementX * 0.0021; eu.inclina = Math.max(-1.3, Math.min(1.3, eu.inclina - e.movementY * 0.0021));
 });
-// arrastar sem pointer lock (fallback) e toque na metade direita
 let olhar = null;
-render.domElement.addEventListener('pointerdown', e => { if (document.pointerLockElement) return; olhar = {id: e.pointerId, x: e.clientX, y: e.clientY}; });
+render.domElement.addEventListener('pointerdown', e => { if (document.pointerLockElement) return; olhar = {id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now()}; });
 addEventListener('pointermove', e => { if (!olhar || e.pointerId !== olhar.id) return;
-  eu.rumo -= (e.clientX - olhar.x) * 0.004; eu.inclina = Math.max(-1.3, Math.min(1.3, eu.inclina + (e.clientY - olhar.y) * 0.004));
+  eu.rumo -= (e.clientX - olhar.x) * 0.0042; eu.inclina = Math.max(-1.3, Math.min(1.3, eu.inclina + (e.clientY - olhar.y) * 0.0042));
   olhar.x = e.clientX; olhar.y = e.clientY; });
-addEventListener('pointerup', e => { if (olhar && e.pointerId === olhar.id) olhar = null; });
-// joystick
+addEventListener('pointerup', e => {
+  if (!olhar || e.pointerId !== olhar.id) return;
+  if (TOQUE && Math.hypot(e.clientX - olhar.x0, e.clientY - olhar.y0) < 10 && performance.now() - olhar.t < 350)
+    alternar(portaMirada(new THREE.Vector2(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1)));
+  olhar = null;
+});
 const joy = document.getElementById('joy'), pino = joy.querySelector('i'); let jv = {x: 0, y: 0}, jid = null;
-joy.addEventListener('pointerdown', e => { e.stopPropagation(); jid = e.pointerId; joy.setPointerCapture(jid); mover(e); });
-joy.addEventListener('pointermove', e => { if (e.pointerId === jid) mover(e); });
+joy.addEventListener('pointerdown', e => { e.stopPropagation(); jid = e.pointerId; joy.setPointerCapture(jid); moverJoy(e); });
+joy.addEventListener('pointermove', e => { if (e.pointerId === jid) moverJoy(e); });
 joy.addEventListener('pointerup', () => { jid = null; jv = {x: 0, y: 0}; pino.style.transform = ''; });
-function mover(e){ const r = joy.getBoundingClientRect(); let dx = (e.clientX - r.left - r.width / 2) / (r.width / 2), dy = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+function moverJoy(e){ const r = joy.getBoundingClientRect(); let dx = (e.clientX - r.left - r.width / 2) / (r.width / 2), dy = (e.clientY - r.top - r.height / 2) / (r.height / 2);
   const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; } jv = {x: dx, y: dy}; pino.style.transform = `translate(${dx * 34}px,${dy * 34}px)`; }
 
 // ---------------------------------------------------------------- planta
@@ -188,13 +331,13 @@ const sx = x => x - B[0], sy = y => B[3] - y;
     s += `<rect class="comodo" x="${sx(c.x0)}" y="${sy(c.y1)}" width="${c.x1 - c.x0}" height="${c.y1 - c.y0}"/>`;
     if (c.rot) s += `<text class="rotulo" x="${sx((c.x0 + c.x1) / 2)}" y="${sy((c.y0 + c.y1) / 2) + .15}">${c.rot}</text>`;
   }
-  s += `<polygon class="cone" id="cone"/><circle class="eu" id="eu" r=".3"/></svg>`;
+  s += `<polygon class="cone" id="cone" points="0,0 0,0 0,0"/><circle class="eu" id="eu" r=".3"/></svg>`;
   mapa.innerHTML = s;
   const svg = mapa.querySelector('svg');
   svg.addEventListener('click', e => {
     const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
     const q = p.matrixTransform(svg.getScreenCTM().inverse()), x = q.x + B[0], y = B[3] - q.y, h = piso(x, y);
-    if (h !== null && livre(x, y, h)) { eu.x = x; eu.y = y; eu.alt = h; }
+    if (h !== null && dist(x, y) >= RAIO) { eu.x = x; eu.y = y; eu.alt = h; eu.olho = h + ALTURA; }
   });
 })();
 function atualizaMapa(){
@@ -211,32 +354,50 @@ document.getElementById('bMapa').onclick = e => { mapa.classList.toggle('oculto'
 document.getElementById('bTela').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
 
 // ---------------------------------------------------------------- laço
-addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); });
-let t0 = performance.now(), tm = 0;
-eu.alt = 0;
+addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); compositor?.setSize(innerWidth, innerHeight); });
+let t0 = performance.now(), tm = 0, td = 0;
 (function laco(t){
-  const dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
-  if (teclas.KeyQ) eu.rumo -= 1.8 * dt;
-  if (teclas.KeyE) eu.rumo += 1.8 * dt;
+  const dt = Math.min(0.05, Math.max(0, (t - t0) / 1000)); t0 = t;
   let f = 0, l = 0;
   if (teclas.KeyW || teclas.ArrowUp) f += 1;
   if (teclas.KeyS || teclas.ArrowDown) f -= 1;
   if (teclas.KeyD || teclas.ArrowRight) l += 1;
   if (teclas.KeyA || teclas.ArrowLeft) l -= 1;
   f -= jv.y; l += jv.x;
-  const m = Math.hypot(f, l);
-  if (m > 0.05) {
-    const v = (teclas.ShiftLeft || teclas.ShiftRight ? 2.8 : 1.45) * dt / Math.max(1, m);
-    const dx = (Math.sin(eu.rumo) * f + Math.cos(eu.rumo) * l) * v, dy = (Math.cos(eu.rumo) * f - Math.sin(eu.rumo) * l) * v;
-    if (livre(eu.x + dx, eu.y, eu.alt)) eu.x += dx;
-    if (livre(eu.x, eu.y + dy, eu.alt)) eu.y += dy;
-    const h = piso(eu.x, eu.y); if (h !== null) eu.alt = h;
+  const m = Math.hypot(f, l), vel = (teclas.ShiftLeft || teclas.ShiftRight) ? 2.6 : 1.35;
+  const alvoX = m > .05 ? (Math.sin(eu.rumo) * f + Math.cos(eu.rumo) * l) / Math.max(1, m) * vel : 0;
+  const alvoY = m > .05 ? (Math.cos(eu.rumo) * f - Math.sin(eu.rumo) * l) / Math.max(1, m) * vel : 0;
+  const k = 1 - Math.exp(-dt * (m > .05 ? 9 : 12));          // aceleração e frenagem suaves
+  eu.vx += (alvoX - eu.vx) * k; eu.vy += (alvoY - eu.vy) * k;
+  const x0 = eu.x, y0 = eu.y;
+  if (Math.hypot(eu.vx, eu.vy) > 0.005) andar(eu.vx * dt, eu.vy * dt);
+  const real = Math.hypot(eu.x - x0, eu.y - y0);
+  eu.passo += real * 5.2;
+  // portas: abrem sozinhas quando você anda em direção a elas
+  for (const p of Object.values(PORTAS)) {
+    if (!p.no) continue;
+    if (p.alvo === 0 && p.t < .05 && Math.hypot(eu.vx, eu.vy) > .3) {
+      const [ax, ay, bx, by] = segPorta(p), mx = (ax + bx) / 2, my = (ay + by) / 2, dx = mx - eu.x, dy = my - eu.y, d = Math.hypot(dx, dy);
+      if (d < .85 && (eu.vx * dx + eu.vy * dy) / (d * Math.hypot(eu.vx, eu.vy)) > .55) p.alvo = 1;
+    }
+    if (p.t !== p.alvo) {
+      p.t += Math.sign(p.alvo - p.t) * Math.min(Math.abs(p.alvo - p.t), dt / 0.9);
+      const e = p.t < .5 ? 2 * p.t * p.t : 1 - Math.pow(-2 * p.t + 2, 2) / 2;
+      p.no.rotation.y = THREE.MathUtils.degToRad(p.abre) * e;
+    }
   }
+  const balanco = Math.sin(eu.passo) * 0.012 * Math.min(1, Math.hypot(eu.vx, eu.vy));   // leve balanço do passo
   eu.olho += (eu.alt + ALTURA - eu.olho) * Math.min(1, dt * 10);
-  cam.position.set(eu.x, eu.olho, -eu.y);
+  cam.position.set(eu.x, eu.olho + balanco, -eu.y);
   cam.rotation.set(eu.inclina, -eu.rumo, 0);
-  render.render(cena, cam);
+  if (compositor) compositor.render(dt); else render.render(cena, cam);
   if (t - tm > 80) { tm = t; atualizaMapa(); }
+  if (t - td > 120) {
+    td = t;
+    const p = document.pointerLockElement || TOQUE ? portaMirada() : null;
+    dica.style.display = p ? 'block' : 'none';
+    if (p) dica.textContent = (TOQUE ? 'Toque' : 'E ou clique') + (p.alvo > .5 ? ' para fechar a porta' : ' para abrir a porta');
+  }
   requestAnimationFrame(laco);
 })(performance.now());
 </script>
