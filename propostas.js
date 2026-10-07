@@ -53,7 +53,8 @@ export function montarPropostas(cena, gerente, render) {
     caixa('Almofada assento externo',x,y,.478,.40,.40,.045,areia,.02);
   });
   vaso('Centro de mesa externo',-1.45,5.35,.75);
-  [-4.7,-3.6,-2.7].forEach(x=>quadro('Arte corredor',x,1.78,1.60,.46,.66));
+  // Corredor: parede norte já tem os dois quadros reais (vídeo de 07/10); proposta só no trecho livre junto ao vidro.
+  [-3.15].forEach(x=>quadro('Arte corredor',x,1.78,1.60,.46,.66));
   // Suíte: camada clara sobre a colcha existente, sem substituir a cama.
   caixa('Enxoval marfim suíte',-7.70,-1.35,.70,1.25,1.98,.035,marfim,.016);
   caixa('Manta caramelo suíte',-7.20,-1.35,.73,.46,1.97,.028,caramelo,.012);
@@ -63,8 +64,8 @@ export function montarPropostas(cena, gerente, render) {
   [-1.695,-3.509].forEach(y=>{caixa('Manta hóspedes',-4.16,y,.627,.45,.90,.026,oliva,.01);almofada('Almofada hóspedes',-5.2,y,.74,.40,.32,caramelo,Math.PI/2);quadro('Arte hóspedes',-5.70,y,1.57,.55,.70,Math.PI/2);});
   // Escritório e canto pet.
   caixa('Tapete escritório',.65,-2.80,.025,1.35,1.12,.012,tapete,.003);
-  for(let i=0;i<3;i++)caixa('Painel acústico',1.76,-2.9+i*.48,1.65,.055,.34,.85,areia,.02);
-  for(let i=0;i<3;i++){caixa('Prateleira gatos',-.55-i*.42,10.32,1.05+i*.38,.52,.26,.045,madeira,.01);caixa('Almofada prateleira',-.55-i*.42,10.32,1.09+i*.38,.43,.23,.04,areia,.015);}
+  // Parede leste do escritório: ocupada pelas guitarras e pelo Snorlax reais (vídeo de 07/10).
+  for(let i=0;i<3;i++){caixa('Prateleira gatos',-.33-i*.25,10.32,1.05+i*.38,.44,.26,.045,madeira,.01);caixa('Almofada prateleira',-.33-i*.25,10.32,1.09+i*.38,.37,.23,.04,areia,.015);}  // fora da porta de madeira real
   cilindro('Arranhador',-.42,9.15,.43,.07,.86,tapete);cilindro('Base arranhador',-.42,9.15,.026,.18,.05,madeira);
   // Banheiros e lavanderia: organizadores compactos, fora da circulação.
   toalhas(-12.43,-.47,.50);vaso('Dispenser master',-12.41,-.74,.94);
@@ -109,13 +110,7 @@ export function montarPropostas(cena, gerente, render) {
   bandeja('Bandeja jantar',1.65,5.38,.769,.42,.28);
   vaso('Cerâmica jantar',1.60,5.38,.79);
   cilindro('Vela jantar',1.8,5.38,.83,.035,.10,marfim);
-  // Varanda: banco-bar com três banquetas para conversar com quem cozinha.
-  for(const x of [-1.8,-1.15,-.5]){
-    const y=6.65;
-    caixa('Banqueta gourmet assento',x,y,.73,.39,.39,.08,areia,.035,true);
-    for(const dx of [-.14,.14])for(const dy of [-.14,.14])cilindro('Banqueta gourmet pé',x+dx,y+dy,.36,.016,.69,preto);
-    caixa('Banqueta apoio pés',x,y,.23,.31,.025,.025,preto,.005);
-  }
+  // Varanda: as duas banquetas de corda terracota já existem (vídeo de 07/10).
   // Suíte: apoio organizado para leitura, composição discreta nos criados.
   livro('Livro suíte',-8.6,.03,.64,.21,.15);
   vaso('Vaso suíte',-8.67,.25,.65);
@@ -125,8 +120,7 @@ export function montarPropostas(cena, gerente, render) {
     almofada('Almofada hóspedes marfim',-5.35,y,.78,.39,.29,marfim,Math.PI/2);
   }
   // Escritório: prateleira de música e livros, mantendo a bancada existente.
-  caixa('Prateleira música',1.70,-2.86,1.12,.26,1.4,.045,madeira,.012);
-  for(let i=0;i<7;i++)caixa('Livro música',1.69,-3.34+i*.095,1.26,.18,.06,.24,i%2?verde:marfim,.003);
+  // prateleira de música: parede leste ocupada pelas guitarras reais
   // Closet: acessórios agrupados, longe da faixa de passagem.
   bandeja('Bandeja acessórios closet',-10.58,-1.26,.80,.35,.24);
   cilindro('Porta joias',-10.58,-1.26,.86,.055,.09,argila);
@@ -136,8 +130,7 @@ export function montarPropostas(cena, gerente, render) {
     cilindro('Porta escovas',x+.08,y,z+.08,.035,.13,ceramica);
   }
   // Pet: nicho acolchoado próximo ao arranhador, sem plantas ao alcance dos gatos.
-  caixa('Cama pet base',-.75,9.97,.12,.62,.44,.10,madeira,.035,true);
-  caixa('Cama pet colchão',-.75,9.97,.20,.56,.38,.09,oliva,.04);
+  // cama pet: chão do quarto dos gatos ocupado pelas caixas de areia e arranhador reais
   // Deck: mesa de apoio, cerâmica e luz baixa sob o banco.
   cilindro('Mesa apoio deck',-8.05,5.07,.20,.18,.035,madeira);
   cilindro('Mesa apoio deck pé',-8.05,5.07,-.02,.025,.42,preto);
