@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Casa Parente · Tour 360°</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--tinta:#f4f1ea;--sub:rgba(244,241,234,.72);--vidro:rgba(22,20,18,.58);--borda:rgba(255,255,255,.14);--acento:#c8925a;--fundo:#141210}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--fundo);color:var(--tinta);font-family:Inter,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+#palco{position:fixed;inset:0;touch-action:none;cursor:grab}
+#palco:active{cursor:grabbing}
+canvas{display:block}
+.vidro{background:var(--vidro);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--borda);border-radius:14px}
+#topo{position:fixed;left:max(16px,env(safe-area-inset-left));top:max(14px,env(safe-area-inset-top));padding:10px 14px;max-width:calc(100vw - 32px);pointer-events:none}
+#topo .marca{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub)}
+#topo .local{font-size:18px;font-weight:600;margin-top:2px}
+#barra{position:fixed;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom));display:flex;gap:6px;padding:6px}
+#barra button{background:transparent;border:0;color:var(--tinta);font:500 13px Inter,sans-serif;padding:9px 12px;border-radius:10px;cursor:pointer;white-space:nowrap}
+#barra button:hover,#barra button.on{background:rgba(255,255,255,.12)}
+#mapa{position:fixed;right:max(16px,env(safe-area-inset-right));top:max(14px,env(safe-area-inset-top));padding:8px;width:min(330px,46vw)}
+#mapa svg{width:100%;height:auto;display:block}
+#mapa .comodo{fill:rgba(255,255,255,.06);stroke:rgba(255,255,255,.28);stroke-width:.05}
+#mapa .rotulo{fill:rgba(244,241,234,.55);font-size:.42px;text-anchor:middle;pointer-events:none}
+#mapa .ponto{fill:var(--tinta);stroke:#000;stroke-width:.04;cursor:pointer}
+#mapa .ponto.atual{fill:var(--acento)}
+#mapa .cone{fill:rgba(200,146,90,.35)}
+#mapa.oculto{display:none}
+.seta{position:fixed;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;user-select:none;pointer-events:auto}
+.seta .disco{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.85);box-shadow:0 2px 14px rgba(0,0,0,.35);display:grid;place-items:center;transition:transform .15s}
+.seta:hover .disco{transform:scale(1.12);background:rgba(200,146,90,.55)}
+.seta .disco svg{width:20px;height:20px}
+.seta .nome{font-size:12px;font-weight:500;padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.45);white-space:nowrap}
+#lista,#galeria{position:fixed;inset:0;display:none;z-index:20;background:rgba(10,9,8,.86);backdrop-filter:blur(8px);overflow:auto;padding:max(24px,env(safe-area-inset-top)) 16px 90px}
+#lista.on,#galeria.on{display:block}
+.grade{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.cartao{border-radius:12px;overflow:hidden;cursor:pointer;background:#1e1b18;border:1px solid var(--borda)}
+.cartao img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block}
+.cartao div{padding:9px 11px;font-size:13px}
+h2{max-width:1100px;margin:6px auto 14px;font-size:15px;font-weight:600;letter-spacing:.04em}
+.fechar{position:fixed;top:max(14px,env(safe-area-inset-top));right:16px;z-index:21;background:var(--vidro);border:1px solid var(--borda);color:var(--tinta);border-radius:10px;padding:8px 12px;font:500 13px Inter;cursor:pointer}
+#foto{position:fixed;inset:0;z-index:30;display:none;background:#000;align-items:center;justify-content:center}
+#foto.on{display:flex}
+#foto img{max-width:100%;max-height:100%}
+#carregando{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--sub);pointer-events:none;transition:opacity .3s}
+#ajuda{position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));font-size:12px;color:var(--sub);padding:8px 12px;max-width:260px}
+@media (max-width:640px){#mapa{width:44vw;top:auto;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 58px)}#ajuda{display:none}#topo .local{font-size:16px}#barra button{padding:9px 9px;font-size:12px}}
+</style>
+</head>
+<body>
+<div id="palco"></div>
+<div id="topo" class="vidro"><div class="marca">Casa Parente · tour 360°</div><div class="local" id="local">—</div></div>
+<div id="mapa" class="vidro"></div>
+<div id="ajuda" class="vidro">Arraste para olhar em volta. Clique nos círculos para andar. Teclado: setas e W.</div>
+<div id="carregando">carregando…</div>
+<div id="barra" class="vidro">
+  <a href="./" style="color:inherit;text-decoration:none;font:500 13px Inter;padding:9px 12px">Caminhar</a>
+  <button id="bAmb">Ambientes</button>
+  <button id="bMapa" class="on">Planta</button>
+  <button id="bGal">Imagens</button>
+  <button id="bGiro" hidden>Giroscópio</button>
+  <button id="bTela">Tela cheia</button>
+</div>
+<div id="lista"><h2>Ambientes</h2><div class="grade" id="gLista"></div></div>
+<div id="galeria"><h2>Imagens do projeto</h2><div class="grade" id="gGal"></div></div>
+<button class="fechar" id="fechar" hidden>Fechar</button>
+<div id="foto"><img alt=""></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const DADOS = {"pontos": {}, "comodos": [{"rot": "", "x0": 3.93, "y0": 4.05, "x1": 5.473, "y1": 5.49}, {"rot": "Sala", "x0": 0, "y0": 0, "x1": 5.473, "y1": 5.49}, {"rot": "Cozinha", "x0": 0, "y0": 6.2, "x1": 4.335, "y1": 8.66}, {"rot": "", "x0": 0, "y0": 5.49, "x1": 4.335, "y1": 6.2}, {"rot": "Corredor", "x0": -5.74, "y0": 0.66, "x1": 0, "y1": 1.82}, {"rot": "Suíte", "x0": -9.16, "y0": -2.71, "x1": -5.89, "y1": 1.77}, {"rot": "Closet", "x0": -11.4, "y0": -3.18, "x1": -9.28, "y1": -0.39}, {"rot": "", "x0": -11.4, "y0": -0.39, "x1": -9.28, "y1": 0.61}, {"rot": "WC", "x0": -12.79, "y0": -3.81, "x1": -11.52, "y1": 0.61}, {"rot": "Hóspedes", "x0": -5.74, "y0": -3.72, "x1": -2.752, "y1": 0.54}, {"rot": "Lav.", "x0": -2.632, "y0": -0.627, "x1": -1.465, "y1": 0.54}, {"rot": "WC", "x0": -2.632, "y0": -3.72, "x1": -1.465, "y1": -0.747}, {"rot": "Escritório", "x0": -1.185, "y0": -3.72, "x1": 1.804, "y1": -0.15}, {"rot": "", "x0": -1.185, "y0": -0.15, "x1": -0.15, "y1": 0.54}, {"rot": "Gourmet", "x0": -2.6, "y0": 6.9, "x1": -0.15, "y1": 8.66}, {"rot": "Varanda", "x0": -2.6, "y0": 1.94, "x1": -0.15, "y1": 6.9}, {"rot": "Lavand.", "x0": 0, "y0": 8.81, "x1": 2.63, "y1": 10.384}, {"rot": "", "x0": 2.75, "y0": 8.81, "x1": 4.335, "y1": 10.384}, {"rot": "Gatos", "x0": -1.95, "y0": 8.81, "x1": -0.12, "y1": 10.384}, {"rot": "Jacuzzi", "x0": -5.75, "y0": 2.85, "x1": -2.85, "y1": 5.75}], "limites": [-13.389999999999999, -4.41, 6.0729999999999995, 10.984], "galeria": [{"arq": "C1_dia.jpg", "nome": "Sala - parede de pedra e TV"}, {"arq": "C5_dia.jpg", "nome": "Sala - passagem para os quartos"}, {"arq": "C2_dia.jpg", "nome": "Estar e hall de entrada"}, {"arq": "C2_noite.jpg", "nome": "Estar e hall à noite"}, {"arq": "C3_dia.jpg", "nome": "Sala, jantar e cozinha"}, {"arq": "C3_noite.jpg", "nome": "Pé-direito duplo à noite"}, {"arq": "C4_dia.jpg", "nome": "Cozinha"}, {"arq": "S1_dia.jpg", "nome": "Suíte master"}, {"arq": "S1_noite.jpg", "nome": "Suíte master à noite"}, {"arq": "S2_dia.jpg", "nome": "Suíte - parede da TV"}, {"arq": "S3_noite.jpg", "nome": "Closet do casal"}, {"arq": "S4_noite.jpg", "nome": "WC master"}, {"arq": "S5_noite.jpg", "nome": "Corredor para a suíte"}, {"arq": "H1_dia.jpg", "nome": "Quarto de hóspedes"}, {"arq": "H2_noite.jpg", "nome": "Hóspedes - TV e armário"}, {"arq": "W2_noite.jpg", "nome": "WC hóspedes"}, {"arq": "L1_noite.jpg", "nome": "Lavabo"}, {"arq": "E1_dia.jpg", "nome": "Escritório"}, {"arq": "G1_noite.jpg", "nome": "Varanda gourmet"}, {"arq": "G2_noite.jpg", "nome": "Varanda e jacuzzi"}, {"arq": "LV_noite.jpg", "nome": "Lavanderia"}, {"arq": "GT_noite.jpg", "nome": "Quarto dos gatos"}], "inicio": "", "inicio_lon": 240};
+const P = DADOS.pontos, MOBILE = matchMedia('(max-width:900px), (pointer:coarse)').matches;
+const pasta = MOBILE ? 'pano_m/' : 'pano/';
+
+// ---------- cena
+const palco = document.getElementById('palco');
+const render = new THREE.WebGLRenderer({antialias:true});
+render.setPixelRatio(Math.min(devicePixelRatio, 2));
+render.setSize(innerWidth, innerHeight);
+render.outputColorSpace = THREE.SRGBColorSpace;
+palco.appendChild(render.domElement);
+const cena = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(MOBILE ? 80 : 75, innerWidth / innerHeight, .1, 100);
+const geo = new THREE.SphereGeometry(50, 96, 64); geo.scale(-1, 1, 1);
+function esfera(){ const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({transparent:true, opacity:1, depthWrite:false})); m.rotation.y = -Math.PI/2; cena.add(m); return m; }
+const esfA = esfera(), esfB = esfera(); esfB.material.opacity = 0;
+const carregador = new THREE.TextureLoader(), cache = {};
+function textura(id){
+  if (!cache[id]) cache[id] = new Promise((ok, erro) => carregador.load(pasta + id + '.jpg', t => {
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = render.capabilities.getMaxAnisotropy(); t.minFilter = THREE.LinearFilter; t.generateMipmaps = false; ok(t);
+  }, undefined, erro));
+  return cache[id];
+}
+
+// ---------- olhar (lon = 0 olha para o norte, cresce para a direita)
+let lon = DADOS.inicio_lon || 180, lat = -4, fov = cam.fov, atual = null, emTransicao = false;
+function mirar(){
+  lat = Math.max(-85, Math.min(85, lat));
+  const f = THREE.MathUtils.degToRad(90 - lat), t = THREE.MathUtils.degToRad(lon);
+  cam.lookAt(Math.sin(f) * Math.sin(t), Math.cos(f), -Math.sin(f) * Math.cos(t));
+}
+let arrasto = null;
+palco.addEventListener('pointerdown', e => { arrasto = {x:e.clientX, y:e.clientY, lon, lat}; palco.setPointerCapture(e.pointerId); giroAtivo = false; });
+palco.addEventListener('pointermove', e => { if (!arrasto) return; const k = fov / innerHeight;
+  lon = arrasto.lon - (e.clientX - arrasto.x) * k; lat = arrasto.lat + (e.clientY - arrasto.y) * k; });
+palco.addEventListener('pointerup', () => arrasto = null);
+palco.addEventListener('wheel', e => { fov = Math.max(35, Math.min(95, fov + e.deltaY * .04)); cam.fov = fov; cam.updateProjectionMatrix(); }, {passive:true});
+addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') lon -= 8;
+  if (e.key === 'ArrowRight' || e.key === 'd') lon += 8;
+  if (e.key === 'ArrowDown' || e.key === 's') lat -= 6;
+  if (e.key === 'ArrowUp' || e.key === 'w') andarAFrente();
+  if (e.key === 'Escape') fecharPaineis();
+});
+
+// ---------- setas para os pontos vizinhos
+const setas = [];
+const ICONE = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+function montarSetas(){
+  setas.forEach(s => s.el.remove()); setas.length = 0;
+  const p = P[atual];
+  for (const v of p.viz) {
+    const q = P[v], dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy), r = Math.min(d, 3.2);
+    const pos = new THREE.Vector3(dx / d * r, -p.z + .02, -dy / d * r);
+    const el = document.createElement('div'); el.className = 'seta';
+    el.innerHTML = `<div class="disco">${ICONE}</div><div class="nome">${q.nome}</div>`;
+    el.onclick = ev => { ev.stopPropagation(); irPara(v); };
+    document.body.appendChild(el);
+    setas.push({el, pos, id:v, az:(Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360});
+  }
+}
+function posicionarSetas(){
+  const v = new THREE.Vector3();
+  for (const s of setas) {
+    v.copy(s.pos).project(cam);
+    const visivel = v.z < 1 && Math.abs(v.x) < 1.15 && Math.abs(v.y) < 1.15;
+    s.el.style.display = visivel ? 'flex' : 'none';
+    if (visivel) { s.el.style.left = (v.x + 1) / 2 * innerWidth + 'px'; s.el.style.top = (1 - v.y) / 2 * innerHeight + 'px'; }
+  }
+}
+function andarAFrente(){
+  let melhor = null, menor = 60;
+  for (const s of setas) { const dif = Math.abs(((s.az - lon) % 360 + 540) % 360 - 180); if (dif < menor) { menor = dif; melhor = s; } }
+  if (melhor) irPara(melhor.id);
+}
+
+// ---------- transição entre pontos
+async function irPara(id, lonNovo){
+  if (emTransicao || id === atual) return;
+  emTransicao = true;
+  const aviso = document.getElementById('carregando'); aviso.style.opacity = 1;
+  const t = await textura(id);
+  aviso.style.opacity = 0;
+  esfB.material.map = t; esfB.material.needsUpdate = true; esfB.material.opacity = 0;
+  const ini = performance.now(), dur = atual ? 650 : 1;
+  const fov0 = fov;
+  await new Promise(fim => { (function passo(){
+    const k = Math.min(1, (performance.now() - ini) / dur), e = k * k * (3 - 2 * k);
+    esfB.material.opacity = e; cam.fov = fov0 - 10 * Math.sin(Math.PI * e) ; cam.updateProjectionMatrix();
+    if (k < 1) requestAnimationFrame(passo); else fim(); })(); });
+  esfA.material.map = t; esfA.material.needsUpdate = true; esfB.material.opacity = 0; cam.fov = fov; cam.updateProjectionMatrix();
+  atual = id; if (lonNovo !== undefined) lon = lonNovo;
+  document.getElementById('local').textContent = P[id].nome;
+  history.replaceState(null, '', '#' + id);
+  montarSetas(); desenharMapa();
+  P[id].viz.forEach(v => textura(v));      // pré-carrega os vizinhos
+  emTransicao = false;
+}
+
+// ---------- planta clicável
+const mapa = document.getElementById('mapa');
+const B = DADOS.limites;  // [xmin, ymin, xmax, ymax]
+function desenharMapa(){
+  const w = B[2] - B[0], h = B[3] - B[1], sx = x => x - B[0], sy = y => B[3] - y;
+  let s = `<svg viewBox="0 0 ${w} ${h}">`;
+  for (const c of DADOS.comodos) {
+    s += `<rect class="comodo" x="${sx(c.x0)}" y="${sy(c.y1)}" width="${c.x1 - c.x0}" height="${c.y1 - c.y0}"/>`;
+    if (c.rot) s += `<text class="rotulo" x="${sx((c.x0 + c.x1) / 2)}" y="${sy((c.y0 + c.y1) / 2) + .15}">${c.rot}</text>`;
+  }
+  s += `<polygon class="cone" id="cone" points=""/>`;
+  for (const [id, p] of Object.entries(P)) s += `<circle class="ponto${id === atual ? ' atual' : ''}" data-id="${id}" cx="${sx(p.x)}" cy="${sy(p.y)}" r=".28"><title>${p.nome}</title></circle>`;
+  mapa.innerHTML = s + '</svg>';
+  mapa.querySelectorAll('.ponto').forEach(c => c.onclick = () => irPara(c.dataset.id));
+  atualizarCone();
+}
+function atualizarCone(){
+  const cone = document.getElementById('cone'); if (!cone || !atual) return;
+  const sx = x => x - B[0], sy = y => B[3] - y, p = P[atual];
+  const a = THREE.MathUtils.degToRad(lon), ab = Math.atan(Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect), r = 2.2;
+  cone.setAttribute('points', [[0, 0], [Math.sin(a - ab) * r, Math.cos(a - ab) * r], [Math.sin(a + ab) * r, Math.cos(a + ab) * r]]
+    .map(([dx, dy]) => `${sx(p.x + dx)},${sy(p.y + dy)}`).join(' '));
+}
+
+// ---------- painéis
+const lista = document.getElementById('lista'), gal = document.getElementById('galeria'), fechar = document.getElementById('fechar');
+document.getElementById('gLista').innerHTML = Object.entries(P).map(([id, p]) => `<div class="cartao" data-id="${id}"><img loading="lazy" src="miniaturas/${id}.jpg" alt=""><div>${p.nome}</div></div>`).join('');
+document.getElementById('gGal').innerHTML = DADOS.galeria.map(g => `<div class="cartao" data-src="galeria/${g.arq}"><img loading="lazy" src="galeria/m_${g.arq}" alt=""><div>${g.nome}</div></div>`).join('');
+document.querySelectorAll('#gLista .cartao').forEach(c => c.onclick = () => { fecharPaineis(); irPara(c.dataset.id); });
+const foto = document.getElementById('foto');
+document.querySelectorAll('#gGal .cartao').forEach(c => c.onclick = () => { foto.querySelector('img').src = c.dataset.src; foto.classList.add('on'); });
+foto.onclick = () => foto.classList.remove('on');
+function fecharPaineis(){ lista.classList.remove('on'); gal.classList.remove('on'); foto.classList.remove('on'); fechar.hidden = true; }
+document.getElementById('bAmb').onclick = () => { fecharPaineis(); lista.classList.add('on'); fechar.hidden = false; };
+document.getElementById('bGal').onclick = () => { fecharPaineis(); gal.classList.add('on'); fechar.hidden = false; };
+fechar.onclick = fecharPaineis;
+document.getElementById('bMapa').onclick = e => { mapa.classList.toggle('oculto'); e.currentTarget.classList.toggle('on'); };
+document.getElementById('bTela').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+
+// ---------- giroscópio (celular)
+let giroAtivo = false, giroBase = null;
+const bGiro = document.getElementById('bGiro');
+if (MOBILE && 'DeviceOrientationEvent' in window) bGiro.hidden = false;
+bGiro.onclick = async () => {
+  if (DeviceOrientationEvent.requestPermission) { try { if (await DeviceOrientationEvent.requestPermission() !== 'granted') return; } catch (e) { return; } }
+  giroAtivo = !giroAtivo; giroBase = null; bGiro.classList.toggle('on', giroAtivo);
+};
+addEventListener('deviceorientation', e => {
+  if (!giroAtivo || e.alpha == null) return;
+  if (!giroBase) giroBase = {alpha:e.alpha, lon};
+  lon = giroBase.lon - (e.alpha - giroBase.alpha); lat = (e.beta || 90) - 90;
+});
+
+// ---------- laço
+addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); });
+let ultimoMapa = 0;
+(function laco(t){ mirar(); posicionarSetas(); render.render(cena, cam);
+  if (t - ultimoMapa > 60 && atual) { ultimoMapa = t; atualizarCone(); }
+  requestAnimationFrame(laco); })(0);
+const inicial = location.hash.slice(1);
+if (DADOS.inicio) irPara(P[inicial] ? inicial : DADOS.inicio);
+if (inicial === 'galeria' || !DADOS.inicio) { gal.classList.add('on'); fechar.hidden = false; }
+</script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<title>Casa Parente · Caminhar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--tinta:#f4f1ea;--sub:rgba(244,241,234,.72);--vidro:rgba(22,20,18,.6);--borda:rgba(255,255,255,.14);--acento:#c8925a;--fundo:#141210}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--fundo);color:var(--tinta);font-family:Inter,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block}
+.vidro{background:var(--vidro);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--borda);border-radius:14px}
+#topo{position:fixed;left:max(16px,env(safe-area-inset-left));top:max(14px,env(safe-area-inset-top));padding:10px 14px;pointer-events:none}
+#topo .marca{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub)}
+#topo .local{font-size:18px;font-weight:600;margin-top:2px}
+#mapa{position:fixed;right:max(16px,env(safe-area-inset-right));top:max(14px,env(safe-area-inset-top));padding:8px;width:min(320px,44vw)}
+#mapa svg{width:100%;height:auto;display:block;cursor:crosshair}
+#mapa .comodo{fill:rgba(255,255,255,.06);stroke:rgba(255,255,255,.28);stroke-width:.05}
+#mapa .rotulo{fill:rgba(244,241,234,.55);font-size:.42px;text-anchor:middle;pointer-events:none}
+#mapa .eu{fill:var(--acento);stroke:#000;stroke-width:.05}
+#mapa .cone{fill:rgba(200,146,90,.35)}
+#mapa.oculto{display:none}
+#barra{position:fixed;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom));display:flex;gap:6px;padding:6px;z-index:5}
+#barra button,#barra a{background:transparent;border:0;color:var(--tinta);font:500 13px Inter,sans-serif;padding:9px 12px;border-radius:10px;cursor:pointer;white-space:nowrap;text-decoration:none}
+#barra button:hover,#barra a:hover,#barra button.on{background:rgba(255,255,255,.12)}
+#ajuda{position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));font-size:12px;color:var(--sub);padding:10px 12px;line-height:1.55;max-width:250px}
+#ajuda b{color:var(--tinta);font-weight:600}
+#entrada{position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,9,8,.72);z-index:10;cursor:pointer}
+#entrada .caixa{padding:26px 28px;max-width:420px;text-align:center}
+#entrada h1{font-size:20px;margin:0 0 6px;font-weight:600}
+#entrada p{margin:6px 0;color:var(--sub);font-size:14px;line-height:1.5}
+#entrada .botao{display:inline-block;margin-top:14px;background:var(--acento);color:#1a120b;font-weight:600;padding:11px 20px;border-radius:12px}
+#barraCarga{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:16px;overflow:hidden}
+#barraCarga div{height:100%;width:0;background:var(--acento);transition:width .2s}
+#mira{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:rgba(255,255,255,.7);pointer-events:none;display:none}
+#joy{position:fixed;left:max(22px,env(safe-area-inset-left));bottom:calc(max(16px,env(safe-area-inset-bottom)) + 70px);width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid var(--borda);display:none;z-index:4}
+#joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.5)}
+@media (pointer:coarse){#joy{display:block}#ajuda{display:none}}
+@media (max-width:640px){#mapa{width:42vw}#topo .local{font-size:15px}#barra button,#barra a{padding:9px 8px;font-size:12px}}
+</style>
+</head>
+<body>
+<div id="topo" class="vidro"><div class="marca">Casa Parente · caminhar</div><div class="local" id="local">—</div></div>
+<div id="mapa" class="vidro"></div>
+<div id="ajuda" class="vidro"><b>W A S D</b> ou <b>setas</b>: andar · <b>Shift</b>: correr<br><b>Mouse</b>: olhar · <b>Q / E</b>: girar<br><b>Esc</b>: soltar o mouse · clique na planta para ir a um cômodo</div>
+<div id="mira"></div>
+<div id="joy"><i></i></div>
+<div id="barra" class="vidro">
+  <button id="bMapa" class="on">Planta</button>
+  
+  <a href="tour.html">Imagens</a>
+  <button id="bTela">Tela cheia</button>
+</div>
+<div id="entrada"><div class="caixa vidro">
+  <h1>Casa Parente</h1>
+  <p id="msg">Carregando a casa… (a primeira vez demora um pouco)</p>
+  <div id="barraCarga"><div></div></div>
+  <span class="botao" id="btEntrar" style="display:none">Entrar e caminhar</span>
+</div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
+const D = {"v": 1791335670, "zonas": ["exterior", "pedra", "servico", "social", "suite", "sul", "varanda"], "lmax": 16.0, "inicio": {"x": 4.7, "y": 4.6, "rumo": -2.0}, "comodos": [{"nome": "Hall de entrada", "rot": "", "x0": 3.93, "y0": 4.05, "x1": 5.473, "y1": 5.49}, {"nome": "Sala de estar", "rot": "Sala", "x0": 0, "y0": 0, "x1": 5.473, "y1": 5.49}, {"nome": "Cozinha", "rot": "Cozinha", "x0": 0, "y0": 6.2, "x1": 4.335, "y1": 8.66}, {"nome": "Jantar", "rot": "", "x0": 0, "y0": 5.49, "x1": 4.335, "y1": 6.2}, {"nome": "Corredor", "rot": "Corredor", "x0": -5.74, "y0": 0.66, "x1": 0, "y1": 1.82}, {"nome": "Suíte master", "rot": "Suíte", "x0": -9.16, "y0": -2.71, "x1": -5.89, "y1": 1.77}, {"nome": "Closet", "rot": "Closet", "x0": -11.4, "y0": -3.18, "x1": -9.28, "y1": -0.39}, {"nome": "Passagem da suíte", "rot": "", "x0": -11.4, "y0": -0.39, "x1": -9.28, "y1": 0.61}, {"nome": "WC master", "rot": "WC", "x0": -12.79, "y0": -3.81, "x1": -11.52, "y1": 0.61}, {"nome": "Quarto de hóspedes", "rot": "Hóspedes", "x0": -5.74, "y0": -3.72, "x1": -2.752, "y1": 0.54}, {"nome": "Lavabo", "rot": "Lav.", "x0": -2.632, "y0": -0.627, "x1": -1.465, "y1": 0.54}, {"nome": "WC hóspedes", "rot": "WC", "x0": -2.632, "y0": -3.72, "x1": -1.465, "y1": -0.747}, {"nome": "Escritório", "rot": "Escritório", "x0": -1.185, "y0": -3.72, "x1": 1.804, "y1": -0.15}, {"nome": "Escritório", "rot": "", "x0": -1.185, "y0": -0.15, "x1": -0.15, "y1": 0.54}, {"nome": "Varanda gourmet", "rot": "Gourmet", "x0": -2.6, "y0": 6.9, "x1": -0.15, "y1": 8.66}, {"nome": "Varanda", "rot": "Varanda", "x0": -2.6, "y0": 1.94, "x1": -0.15, "y1": 6.9}, {"nome": "Lavanderia", "rot": "Lavand.", "x0": 0, "y0": 8.81, "x1": 2.63, "y1": 10.384}, {"nome": "Hall de serviço", "rot": "", "x0": 2.75, "y0": 8.81, "x1": 4.335, "y1": 10.384}, {"nome": "Quarto dos gatos", "rot": "Gatos", "x0": -1.95, "y0": 8.81, "x1": -0.12, "y1": 10.384}, {"nome": "Jacuzzi", "rot": "Jacuzzi", "x0": -5.75, "y0": 2.85, "x1": -2.85, "y1": 5.75}], "limites": [-13.389999999999999, -4.41, 6.0729999999999995, 10.984]};
+const TOQUE = matchMedia('(pointer:coarse)').matches;
+
+// ---------------------------------------------------------------- renderizador
+const render = new THREE.WebGLRenderer({antialias: !TOQUE, powerPreference:'high-performance'});
+render.setPixelRatio(Math.min(devicePixelRatio, TOQUE ? 1.5 : 2));
+render.setSize(innerWidth, innerHeight);
+render.outputColorSpace = THREE.SRGBColorSpace;
+render.toneMapping = THREE.AgXToneMapping;
+render.toneMappingExposure = 1.0;
+document.body.prepend(render.domElement);
+const cena = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(TOQUE ? 72 : 68, innerWidth / innerHeight, 0.05, 200);
+cam.rotation.order = 'YXZ';
+
+// ---------------------------------------------------------------- carregamento
+const gerente = new THREE.LoadingManager();
+const barra = document.querySelector('#barraCarga div');
+gerente.onProgress = (u, a, t) => barra.style.width = (a / t * 100).toFixed(0) + '%';
+const draco = new DRACOLoader(gerente); draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+const gltf = new GLTFLoader(gerente); gltf.setDRACOLoader(draco);
+const texLoader = new THREE.TextureLoader(gerente);
+const sufixo = TOQUE ? '_m' : '';
+
+texLoader.load('ceu.jpg?v=' + D.v, t => { t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace; cena.background = t; });
+
+for (const z of D.zonas) {
+  const luz = texLoader.load(`${z}_luz${sufixo}.jpg?v=${D.v}`);
+  luz.flipY = false; luz.colorSpace = THREE.SRGBColorSpace; luz.channel = 0;
+  const cor = texLoader.load(`${z}_cor${sufixo}.jpg?v=${D.v}`);
+  cor.flipY = false; cor.colorSpace = THREE.SRGBColorSpace; cor.channel = 0;
+  cor.anisotropy = TOQUE ? 2 : render.capabilities.getMaxAnisotropy();
+  gltf.load(`casa_${z}.glb?v=${D.v}`, g => {
+    g.scene.traverse(o => {
+      if (!o.isMesh) return;
+      o.material = new THREE.MeshBasicMaterial({map: cor, lightMap: luz, lightMapIntensity: D.lmax * Math.PI});
+    });
+    cena.add(g.scene);
+  });
+}
+gltf.load('extras.glb?v=' + D.v, g => {
+  g.scene.traverse(o => {
+    if (!o.isMesh) return;
+    const nome = (o.name + ' ' + (o.material.name || '')).toLowerCase(), m0 = o.material;
+    let m;
+    if (nome.includes('voal')) m = new THREE.MeshBasicMaterial({color: 0xe6dfd2, transparent: true, opacity: .78, side: THREE.DoubleSide, depthWrite: false});
+    else if (nome.includes('tela de prote')) m = new THREE.MeshBasicMaterial({color: 0x222222, transparent: true, opacity: .45, depthWrite: false});
+    else if (nome.includes('água') || nome.includes('agua')) m = new THREE.MeshBasicMaterial({color: 0x9ccac4, transparent: true, opacity: .85});
+    else if (nome.includes('vidro') || nome.includes('cristal') || nome.includes('claraboia')) m = new THREE.MeshBasicMaterial({color: 0xdfe9e6, transparent: true, opacity: .10, depthWrite: false, side: THREE.DoubleSide});
+    else if (nome.startsWith('led_')) m = new THREE.MeshBasicMaterial({color: new THREE.Color(1.6, 1.35, 1.0)});
+    else { m = new THREE.MeshBasicMaterial({map: m0.map || null, color: m0.map ? new THREE.Color(.82, .80, .76) : m0.color.clone().multiplyScalar(.9),
+            alphaTest: m0.map ? .5 : 0, transparent: false, side: THREE.DoubleSide}); }
+    o.material = m;
+  });
+  cena.add(g.scene);
+});
+let colisao = null;
+fetch('colisao.json?v=' + D.v).then(r => r.json()).then(j => colisao = j);
+gerente.onLoad = () => {
+  document.getElementById('msg').textContent = TOQUE ? 'Use o joystick para andar e arraste a tela para olhar em volta.' : 'Clique para entrar. W A S D ou setas para andar, mouse para olhar.';
+  barra.parentElement.style.display = 'none';
+  document.getElementById('btEntrar').style.display = 'inline-block';
+};
+
+// ---------------------------------------------------------------- jogador (coordenadas da maquete: x leste, y norte)
+const eu = {x: D.inicio.x, y: D.inicio.y, olho: 1.6, rumo: D.inicio.rumo, inclina: -0.05, alt: 0};
+const ALTURA = 1.6, RAIO = 0.22;
+window.__casa = {eu, cam, D};
+function piso(x, y){
+  if (!colisao) return 0;
+  const i = Math.floor((x - colisao.x0) / colisao.passo), j = Math.floor((y - colisao.y0) / colisao.passo);
+  if (i < 0 || j < 0 || i >= colisao.nx || j >= colisao.ny) return null;
+  return colisao.piso[j][i];
+}
+function livre(x, y, zAtual){
+  for (const [dx, dy] of [[0,0],[RAIO,0],[-RAIO,0],[0,RAIO],[0,-RAIO],[RAIO*.7,RAIO*.7],[-RAIO*.7,RAIO*.7],[RAIO*.7,-RAIO*.7],[-RAIO*.7,-RAIO*.7]]) {
+    const h = piso(x + dx, y + dy);
+    if (h === null || h - zAtual > 0.32) return false;
+  }
+  return true;
+}
+const teclas = {};
+addEventListener('keydown', e => { teclas[e.code] = true; if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault(); });
+addEventListener('keyup', e => teclas[e.code] = false);
+addEventListener('blur', () => Object.keys(teclas).forEach(k => teclas[k] = false));
+
+// mouse (pointer lock) e toque
+const entrada = document.getElementById('entrada'), mira = document.getElementById('mira');
+entrada.onclick = () => {
+  if (document.getElementById('btEntrar').style.display === 'none') return;
+  entrada.style.display = 'none';
+  if (!TOQUE) render.domElement.requestPointerLock?.();
+};
+render.domElement.addEventListener('click', () => { if (!TOQUE && document.pointerLockElement !== render.domElement) render.domElement.requestPointerLock?.(); });
+document.addEventListener('pointerlockchange', () => mira.style.display = document.pointerLockElement ? 'block' : 'none');
+addEventListener('mousemove', e => {
+  if (document.pointerLockElement !== render.domElement) return;
+  eu.rumo += e.movementX * 0.0022; eu.inclina = Math.max(-1.3, Math.min(1.3, eu.inclina - e.movementY * 0.0022));
+});
+// arrastar sem pointer lock (fallback) e toque na metade direita
+let olhar = null;
+render.domElement.addEventListener('pointerdown', e => { if (document.pointerLockElement) return; olhar = {id: e.pointerId, x: e.clientX, y: e.clientY}; });
+addEventListener('pointermove', e => { if (!olhar || e.pointerId !== olhar.id) return;
+  eu.rumo -= (e.clientX - olhar.x) * 0.004; eu.inclina = Math.max(-1.3, Math.min(1.3, eu.inclina + (e.clientY - olhar.y) * 0.004));
+  olhar.x = e.clientX; olhar.y = e.clientY; });
+addEventListener('pointerup', e => { if (olhar && e.pointerId === olhar.id) olhar = null; });
+// joystick
+const joy = document.getElementById('joy'), pino = joy.querySelector('i'); let jv = {x: 0, y: 0}, jid = null;
+joy.addEventListener('pointerdown', e => { e.stopPropagation(); jid = e.pointerId; joy.setPointerCapture(jid); mover(e); });
+joy.addEventListener('pointermove', e => { if (e.pointerId === jid) mover(e); });
+joy.addEventListener('pointerup', () => { jid = null; jv = {x: 0, y: 0}; pino.style.transform = ''; });
+function mover(e){ const r = joy.getBoundingClientRect(); let dx = (e.clientX - r.left - r.width / 2) / (r.width / 2), dy = (e.clientY - r.top - r.height / 2) / (r.height / 2);
+  const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; } jv = {x: dx, y: dy}; pino.style.transform = `translate(${dx * 34}px,${dy * 34}px)`; }
+
+// ---------------------------------------------------------------- planta
+const B = D.limites, mapa = document.getElementById('mapa');
+const sx = x => x - B[0], sy = y => B[3] - y;
+(function(){
+  let s = `<svg viewBox="0 0 ${B[2] - B[0]} ${B[3] - B[1]}">`;
+  for (const c of D.comodos) {
+    s += `<rect class="comodo" x="${sx(c.x0)}" y="${sy(c.y1)}" width="${c.x1 - c.x0}" height="${c.y1 - c.y0}"/>`;
+    if (c.rot) s += `<text class="rotulo" x="${sx((c.x0 + c.x1) / 2)}" y="${sy((c.y0 + c.y1) / 2) + .15}">${c.rot}</text>`;
+  }
+  s += `<polygon class="cone" id="cone"/><circle class="eu" id="eu" r=".3"/></svg>`;
+  mapa.innerHTML = s;
+  const svg = mapa.querySelector('svg');
+  svg.addEventListener('click', e => {
+    const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    const q = p.matrixTransform(svg.getScreenCTM().inverse()), x = q.x + B[0], y = B[3] - q.y, h = piso(x, y);
+    if (h !== null && livre(x, y, h)) { eu.x = x; eu.y = y; eu.alt = h; }
+  });
+})();
+function atualizaMapa(){
+  const e = document.getElementById('eu'), c = document.getElementById('cone'); if (!e) return;
+  e.setAttribute('cx', sx(eu.x)); e.setAttribute('cy', sy(eu.y));
+  const ab = Math.atan(Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * cam.aspect), r = 2.4;
+  c.setAttribute('points', [[0, 0], [Math.sin(eu.rumo - ab) * r, Math.cos(eu.rumo - ab) * r], [Math.sin(eu.rumo + ab) * r, Math.cos(eu.rumo + ab) * r]]
+    .map(([dx, dy]) => `${sx(eu.x + dx)},${sy(eu.y + dy)}`).join(' '));
+  let nome = 'Área externa';
+  for (const c2 of D.comodos) if (c2.nome && eu.x >= c2.x0 && eu.x <= c2.x1 && eu.y >= c2.y0 && eu.y <= c2.y1) { nome = c2.nome; break; }
+  document.getElementById('local').textContent = nome;
+}
+document.getElementById('bMapa').onclick = e => { mapa.classList.toggle('oculto'); e.currentTarget.classList.toggle('on'); };
+document.getElementById('bTela').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+
+// ---------------------------------------------------------------- laço
+addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); });
+let t0 = performance.now(), tm = 0;
+eu.alt = 0;
+(function laco(t){
+  const dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
+  if (teclas.KeyQ) eu.rumo -= 1.8 * dt;
+  if (teclas.KeyE) eu.rumo += 1.8 * dt;
+  let f = 0, l = 0;
+  if (teclas.KeyW || teclas.ArrowUp) f += 1;
+  if (teclas.KeyS || teclas.ArrowDown) f -= 1;
+  if (teclas.KeyD || teclas.ArrowRight) l += 1;
+  if (teclas.KeyA || teclas.ArrowLeft) l -= 1;
+  f -= jv.y; l += jv.x;
+  const m = Math.hypot(f, l);
+  if (m > 0.05) {
+    const v = (teclas.ShiftLeft || teclas.ShiftRight ? 2.8 : 1.45) * dt / Math.max(1, m);
+    const dx = (Math.sin(eu.rumo) * f + Math.cos(eu.rumo) * l) * v, dy = (Math.cos(eu.rumo) * f - Math.sin(eu.rumo) * l) * v;
+    if (livre(eu.x + dx, eu.y, eu.alt)) eu.x += dx;
+    if (livre(eu.x, eu.y + dy, eu.alt)) eu.y += dy;
+    const h = piso(eu.x, eu.y); if (h !== null) eu.alt = h;
+  }
+  eu.olho += (eu.alt + ALTURA - eu.olho) * Math.min(1, dt * 10);
+  cam.position.set(eu.x, eu.olho, -eu.y);
+  cam.rotation.set(eu.inclina, -eu.rumo, 0);
+  render.render(cena, cam);
+  if (t - tm > 80) { tm = t; atualizaMapa(); }
+  requestAnimationFrame(laco);
+})(performance.now());
+</script>
+</body>
+</html>
