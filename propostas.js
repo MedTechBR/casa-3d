@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // Coordenadas da planta: X/Y no chão, Z vertical. Conversão única para o Three.
@@ -143,6 +144,39 @@ export function montarPropostas(cena, gerente, render) {
   vaso('Cerâmica lounge',-6.96,4.76,.22);
   livro('Livro lounge',-7.1,4.8,.24,.20,.14);
   for(const x of [-8.03,-7.15,-6.26])luz(x,5.6,-.02,.45);
+
+  // Paisagismo: espécies modeladas com folhas reais, em massas perimetrais.
+  const terra=material('terra jardim',0x55483b), pedra=material('borda jardim',0xb4ae9d);
+  caixa('Canteiro oeste terra',-13.83,7.65,-.275,.85,10.6,.045,terra,.015);
+  caixa('Canteiro norte terra',-8.15,13.48,-.275,10.8,.78,.045,terra,.015);
+  caixa('Borda oeste',-13.35,7.65,-.24,.06,10.6,.10,pedra,.015);
+  caixa('Borda norte',-8.15,13.03,-.24,10.8,.06,.10,pedra,.015);
+  // A faixa junto ao lounge preenche o canteiro já proposto.
+  const plantas=new GLTFLoader(gerente);
+  function plantar(modelo,pontos){
+    plantas.load(`propostas/vegetacao/${modelo}/${modelo}.gltf`,g=>{
+      const box=new THREE.Box3().setFromObject(g.scene), dim=box.getSize(new THREE.Vector3());
+      const centro=box.getCenter(new THREE.Vector3());
+      g.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+      pontos.forEach(([x,y,h],i)=>{
+        const raiz=new THREE.Group();raiz.name='Vegetação '+modelo+' '+i;
+        const planta=g.scene.clone(true);planta.position.set(-centro.x,-box.min.y,-centro.z);
+        raiz.add(planta);const k=h/Math.max(dim.y,.01);raiz.scale.set(k*.58,k,k*.58);
+        raiz.rotation.y=i*2.399;raiz.position.set(x,-.25,-y);grupo.add(raiz);
+      });
+    });
+  }
+  const folhagens=[];
+  for(let i=0;i<18;i++)folhagens.push([-13.78,2.65+i*.57,.58+(i%3)*.14]);
+  for(let i=0;i<18;i++)folhagens.push([-13.1+i*.57,13.45,.56+(i%4)*.11]);
+  for(let i=0;i<7;i++)folhagens.push([-8.87,2.95+i*.49,.52+(i%3)*.12]);
+  plantar('anthurium_botany_01',folhagens);
+  plantar('potted_plant_02',[[-13.8,3.4,1.12],[-13.8,6.1,1.22],[-13.8,8.8,1.08],[-12.3,13.45,1.1],[-9.65,13.45,1.22],[-6.95,13.45,1.12],[-8.87,6.03,.94]]);
+  // Balizadores baixos definem as bordas; gramado e acesso à jacuzzi ficam livres.
+  for(const [x,y] of [[-13.25,3.4],[-13.25,6.1],[-13.25,8.8],[-12.3,12.9],[-9.65,12.9],[-6.95,12.9]]){
+    cilindro('Balizador jardim',x,y,-.08,.035,.37,preto);
+    cilindro('Difusor balizador',x,y,.105,.036,.07,led);luz(x,y,.14,.7);
+  }
 
   const ambiente=new THREE.HemisphereLight(0xfff0da,0x8c806b,.75);grupo.add(ambiente);
   let ativo=true;
